@@ -36,17 +36,18 @@ English docs: [README.md](README.md)
 
 핵심은 **서버 OS가 뭐냐**입니다. 클라이언트가 아닙니다.
 
-| 클라이언트 | 서버 | mosh | tmux |
-|-----------|------|:----:|:----:|
-| Mac | Mac | ✅ | ✅ |
-| Mac | Linux | ✅ | ✅ |
-| Mac | Windows | ❌ | ❌ |
-| Linux | Mac | ✅ | ✅ |
-| Linux | Linux | ✅ | ✅ |
-| Linux | Windows | ❌ | ❌ |
-| Windows | Mac | ✅ | ✅ |
-| Windows | Linux | ✅ | ✅ |
-| Windows | Windows | ❌ | ❌ |
+| 클라이언트 | 서버 | ssh | mosh | tmux |
+|--------|--------|:---:|:----:|:----:|
+| Mac | Mac | ✅ | ✅ | ✅ |
+| Mac | Linux | ✅ | ✅ | ✅ |
+| Mac | Windows | ✅ | ❌ | ❌ |
+| Linux | Mac | ✅ | ✅ | ✅ |
+| Linux | Linux | ✅ | ✅ | ✅ |
+| Linux | Windows | ✅ | ❌ | ❌ |
+| Windows | Mac | ✅ | ✅ | ✅ |
+| Windows | Linux | ✅ | ✅ | ✅ |
+| Windows | Windows | ✅ | ❌ | ❌ |
+
 
 > **이유:** `mosh-server`와 `tmux`는 **서버** 측에서 실행됩니다. Windows 서버는 이를 지원하지 않습니다.
 > Windows 클라이언트는 WSL에 mosh를 설치하면 mosh 사용 가능. SSH는 모든 조합에서 항상 동작합니다.
@@ -206,9 +207,14 @@ $ sshtie doctor homeserver
 
 ### 클라이언트 (sshtie 툴)
 
-**macOS**
+**macOS** *(Homebrew — 권장)*
 ```bash
-# 소스에서 빌드 (Homebrew tap 추후 지원 예정)
+brew tap ainsuotain/sshtie
+brew install sshtie
+```
+
+**macOS** *(소스에서 빌드)*
+```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
