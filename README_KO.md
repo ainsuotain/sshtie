@@ -11,6 +11,12 @@ English docs: [README.md](README.md)
 
 ---
 
+## 데모
+
+![sshtie demo](demo.gif)
+
+---
+
 ## sshtie란?
 
 `sshtie`는 SSH/mosh/tmux 서버 프로파일을 관리하고,

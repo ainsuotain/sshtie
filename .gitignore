@@ -2,6 +2,11 @@
 sshtie
 sshtie.exe
 
+# Demo recording intermediate files
+demo.cast
+demo.mp4
+demo.webp
+
 # macOS metadata
 .DS_Store
 ._*
