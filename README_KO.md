@@ -230,7 +230,8 @@ sshtie/
 └── internal/
     ├── profile/      # YAML 읽기/쓰기 (~/.sshtie/profiles.yaml)
     ├── connector/    # 연결 전략 (mosh/ssh/tmux 폴백)
-    └── doctor/       # 진단 로직
+    ├── doctor/       # 진단 로직
+    └── tui/          # Bubble Tea 대화형 프로파일 선택기
 ```
 
 ---
@@ -242,7 +243,7 @@ sshtie/
 | 언어 | Go 1.22 — 단일 바이너리, 크로스플랫폼 |
 | CLI 프레임워크 | [Cobra](https://github.com/spf13/cobra) |
 | 설정 형식 | YAML ([gopkg.in/yaml.v3](https://pkg.go.dev/gopkg.in/yaml.v3)) |
-| TUI *(v0.2 예정)* | [Bubble Tea](https://github.com/charmbracelet/bubbletea) |
+| TUI | [Bubble Tea](https://github.com/charmbracelet/bubbletea) |
 
 ---
 
@@ -258,8 +259,8 @@ sshtie/
 - [x] `sshtie install` — 원격 mosh/tmux 자동 설치 (apt/dnf/yum/brew/pacman)
 - [x] Windows / Linux / macOS 크로스플랫폼 지원
 
-### v0.2 — TUI
-- [ ] Bubble Tea 기반 TUI (인자 없이 실행 시)
+### v0.2 — TUI ✅
+- [x] Bubble Tea 기반 TUI (인자 없이 실행 시)
 - [ ] `sshtie edit <name>`
 - [ ] 실시간 연결 상태 표시
 
