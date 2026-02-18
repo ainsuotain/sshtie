@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ainsuotain/sshtie/internal/profile"
+	"github.com/ainsuotain/sshtie/internal/tailscale"
 )
 
 func netAddr(host string, port int) string {
@@ -34,6 +35,25 @@ func Connect(p profile.Profile) error {
 	if runtime.GOOS == "windows" {
 		fmt.Fprintln(os.Stderr, "→ Windows detected: mosh not supported, using SSH directly")
 		return connectSSH(p, port, session)
+	}
+
+	// Tailscale routing check.
+	switch p.Network {
+	case "tailscale":
+		// Profile explicitly requires Tailscale — fail fast if unavailable.
+		if !tailscale.ClientRunning() {
+			return fmt.Errorf("Tailscale is not running (profile requires network=tailscale)")
+		}
+		if !tailscale.HostInNetwork(p.Host) {
+			return fmt.Errorf("host %q is not in the Tailscale network", p.Host)
+		}
+		fmt.Println("→ Routing via Tailscale")
+	case "direct":
+		// Skip Tailscale and mosh; go straight to SSH.
+	default: // "auto"
+		if tailscale.ClientRunning() && tailscale.HostInNetwork(p.Host) {
+			fmt.Println("→ Tailscale detected: routing via Tailscale network")
+		}
 	}
 
 	// Try mosh first (unless network mode is "direct").
