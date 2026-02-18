@@ -1,0 +1,25 @@
+# Binary
+sshtie
+sshtie.exe
+
+# macOS metadata
+.DS_Store
+._*
+
+# Build artifacts
+*.o
+*.a
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/
+
+# Spec / planning docs (internal use)
+project-overview/
+.specstory/
+
+# Output log (internal use)
+output.txt
