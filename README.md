@@ -35,17 +35,17 @@
 
 The key factor is **what OS the server runs**, not the client.
 
-| Client | Server | mosh | tmux |
-|--------|--------|:----:|:----:|
-| Mac | Mac | ✅ | ✅ |
-| Mac | Linux | ✅ | ✅ |
-| Mac | Windows | ❌ | ❌ |
-| Linux | Mac | ✅ | ✅ |
-| Linux | Linux | ✅ | ✅ |
-| Linux | Windows | ❌ | ❌ |
-| Windows | Mac | ✅ | ✅ |
-| Windows | Linux | ✅ | ✅ |
-| Windows | Windows | ❌ | ❌ |
+| Client | Server | ssh | mosh | tmux |
+|--------|--------|:---:|:----:|:----:|
+| Mac | Mac | ✅ | ✅ | ✅ |
+| Mac | Linux | ✅ | ✅ | ✅ |
+| Mac | Windows | ✅ | ❌ | ❌ |
+| Linux | Mac | ✅ | ✅ | ✅ |
+| Linux | Linux | ✅ | ✅ | ✅ |
+| Linux | Windows | ✅ | ❌ | ❌ |
+| Windows | Mac | ✅ | ✅ | ✅ |
+| Windows | Linux | ✅ | ✅ | ✅ |
+| Windows | Windows | ✅ | ❌ | ❌ |
 
 > **Why?** `mosh-server` and `tmux` run on the **server** side — Windows servers don't support them.
 > Windows clients can use mosh if WSL has mosh installed; SSH always works on any combination.
@@ -198,9 +198,14 @@ $ sshtie doctor homeserver
 
 ### Client (sshtie tool)
 
-**macOS**
+**macOS** *(Homebrew — recommended)*
 ```bash
-# Build from source (Homebrew tap coming soon)
+brew tap ainsuotain/sshtie
+brew install sshtie
+```
+
+**macOS** *(build from source)*
+```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
