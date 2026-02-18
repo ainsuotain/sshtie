@@ -15,6 +15,9 @@ demo.webp
 *.o
 *.a
 
+# Release build output
+dist/
+
 # IDE
 .vscode/
 .idea/
