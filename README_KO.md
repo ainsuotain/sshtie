@@ -32,6 +32,27 @@ English docs: [README.md](README.md)
 
 ---
 
+## 플랫폼 호환성
+
+핵심은 **서버 OS가 뭐냐**입니다. 클라이언트가 아닙니다.
+
+| 클라이언트 | 서버 | mosh | tmux |
+|-----------|------|:----:|:----:|
+| Mac | Mac | ✅ | ✅ |
+| Mac | Linux | ✅ | ✅ |
+| Mac | Windows | ❌ | ❌ |
+| Linux | Mac | ✅ | ✅ |
+| Linux | Linux | ✅ | ✅ |
+| Linux | Windows | ❌ | ❌ |
+| Windows | Mac | ✅ | ✅ |
+| Windows | Linux | ✅ | ✅ |
+| Windows | Windows | ❌ | ❌ |
+
+> **이유:** `mosh-server`와 `tmux`는 **서버** 측에서 실행됩니다. Windows 서버는 이를 지원하지 않습니다.
+> Windows 클라이언트는 WSL에 mosh를 설치하면 mosh 사용 가능. SSH는 모든 조합에서 항상 동작합니다.
+
+---
+
 ## 시작하기
 
 ### 3단계로 접속
@@ -51,23 +72,30 @@ English docs: [README.md](README.md)
 
 ### 1단계 — 서버 등록
 
+`sshtie add`는 7단계 TUI 위자드를 실행합니다. Enter로 다음, ESC로 이전 단계.
+
 ```
 $ sshtie add
 
-Profile name           : homeserver
-Host                   : 192.168.1.100
-User                   : alice
-Port                   [22]:
-SSH Key                [~/.ssh/id_ed25519]:
-tmux session           [main]:
-Network mode           [auto]:
+  sshtie add  New Profile        Step 1 / 7
 
+  ▶ Profile name    homeserver█
+  · Host            (required)
+  · User            (required)
+  · Port            22
+  · SSH Key         ~/.ssh/id_ed25519
+  · tmux session    main
+  · Network mode    auto
+
+  enter  next  •  esc  back  •  ctrl+c  cancel
+```
+
+```
 ✅ Profile 'homeserver' saved!
 → Try: sshtie connect homeserver
 ```
 
-필수 항목은 이름·호스트·유저 3가지만.
-나머지는 엔터로 기본값 사용 가능합니다.
+필수 항목은 이름·호스트·유저 3가지만. 나머지는 Enter로 기본값 사용.
 
 ---
 
@@ -140,10 +168,12 @@ sshtie가 자동으로 최적 전략을 선택합니다:
 
 | 커맨드 | 설명 |
 |---|---|
-| `sshtie add` | 프로파일 추가 (대화형) |
+| `sshtie` | TUI 프로파일 선택기 실행 |
+| `sshtie add` | 프로파일 추가 (TUI 위자드) |
 | `sshtie list` | 프로파일 목록 |
 | `sshtie connect <name>` | 접속 |
 | `sshtie <name>` | connect 단축키 |
+| `sshtie edit <name>` | `$EDITOR`로 프로파일 편집 |
 | `sshtie install <name>` | 원격 서버에 mosh + tmux 자동 설치 |
 | `sshtie doctor <name>` | 연결 진단 |
 | `sshtie remove <name>` | 프로파일 삭제 |
@@ -163,7 +193,8 @@ $ sshtie doctor homeserver
   mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
   UDP port 60001       ✅ Open (or filtered — mosh will confirm)
   tmux                 ✅ tmux 3.3a installed
-  Tailscale            ⚠  Not detected (optional)
+  Tailscale (client)   ✅ Running
+  Tailscale (server)   ✅ Found in Tailscale network
 
 → Recommended strategy: mosh + tmux
 → Ready to connect!
@@ -173,16 +204,51 @@ $ sshtie doctor homeserver
 
 ## 설치
 
+### 클라이언트 (sshtie 툴)
+
+**macOS**
+```bash
+# 소스에서 빌드 (Homebrew tap 추후 지원 예정)
+git clone https://github.com/ainsuotain/sshtie
+cd sshtie
+go build -o sshtie .
+sudo mv sshtie /usr/local/bin/
+```
+
+**Linux**
 ```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
-
-# PATH에 추가
 sudo mv sshtie /usr/local/bin/
 ```
 
+**Windows**
+```powershell
+git clone https://github.com/ainsuotain/sshtie
+cd sshtie
+go build -o sshtie.exe .
+# sshtie.exe를 %PATH% 경로에 복사
+```
+> WSL 환경에서는 mosh도 사용 가능합니다.
+
 Go 1.22 이상 필요. 외부 런타임 의존성 없음 — 단일 바이너리.
+
+---
+
+### 서버 사전 요구사항
+
+**macOS 서버**
+- 시스템 설정 → 일반 → 공유 → **원격 로그인: ON**
+- mosh + tmux 설치: `brew install mosh tmux` *(또는 `sshtie install` 사용)*
+
+**Linux 서버**
+- `sshd` 실행 중이어야 함
+- mosh + tmux 설치: `sudo apt install mosh tmux` *(또는 `sshtie install` 사용)*
+
+**Windows 서버**
+- 설정 → 앱 → 선택적 기능 → **OpenSSH 서버** 설치
+- ⚠ Windows 서버는 mosh-server, tmux 미지원 — SSH만 사용 가능
 
 ---
 
@@ -221,9 +287,10 @@ sshtie/
 ├── go.mod
 ├── cmd/
 │   ├── root.go       # cobra root + sshtie <name> 단축키
-│   ├── add.go        # 대화형 프로파일 추가
+│   ├── add.go        # TUI 위자드 프로파일 추가
 │   ├── connect.go    # 연결 진입점
-│   ├── install.go    # 원격 mosh + tmux 설치
+│   ├── edit.go       # $EDITOR로 프로파일 편집
+│   ├── install.go    # 원격 mosh + tmux + tailscale 설치
 │   ├── list.go       # 프로파일 목록
 │   ├── doctor.go     # 진단
 │   └── remove.go     # 삭제
@@ -231,6 +298,7 @@ sshtie/
     ├── profile/      # YAML 읽기/쓰기 (~/.sshtie/profiles.yaml)
     ├── connector/    # 연결 전략 (mosh/ssh/tmux 폴백)
     ├── doctor/       # 진단 로직
+    ├── tailscale/    # Tailscale 클라이언트/피어 감지
     └── tui/          # Bubble Tea 대화형 프로파일 선택기
 ```
 
@@ -261,12 +329,14 @@ sshtie/
 
 ### v0.2 — TUI ✅
 - [x] Bubble Tea 기반 TUI (인자 없이 실행 시)
-- [ ] `sshtie edit <name>`
-- [ ] 실시간 연결 상태 표시
+- [x] `sshtie edit <name>` — $EDITOR로 프로파일 편집
+- [x] `sshtie add` TUI 위자드 (7단계)
 
-### v0.3 — 완성도
-- [ ] Tailscale 자동 감지
+### v0.3 — 완성도 ✅
+- [x] Tailscale 자동 감지 (클라이언트 + 서버)
+- [x] `sshtie install --tailscale`
 - [ ] Homebrew tap 배포
+- [ ] 실시간 연결 상태 표시
 
 ---
 
