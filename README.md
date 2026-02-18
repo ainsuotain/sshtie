@@ -11,6 +11,12 @@
 
 ---
 
+## Demo
+
+![sshtie demo](demo.gif)
+
+---
+
 ## What is sshtie?
 
 `sshtie` manages your SSH/mosh/tmux server profiles and **automatically picks the best connection strategy** based on your network.
