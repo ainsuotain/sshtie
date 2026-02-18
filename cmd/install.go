@@ -13,11 +13,15 @@ import (
 	"github.com/ainsuotain/sshtie/internal/profile"
 )
 
+var installTailscale bool
+
 var installCmd = &cobra.Command{
 	Use:   "install <name>",
-	Short: "Install mosh-server and tmux on a remote server via SSH",
+	Short: "Install mosh-server, tmux (and optionally Tailscale) on a remote server",
 	Long: `Connects to the remote server and installs mosh + tmux
-using the appropriate package manager (apt / dnf / yum / brew / pacman).`,
+using the appropriate package manager (apt / dnf / yum / brew / pacman).
+
+Use --tailscale to also install Tailscale on the remote server.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
@@ -30,6 +34,10 @@ using the appropriate package manager (apt / dnf / yum / brew / pacman).`,
 		}
 		return runInstall(p)
 	},
+}
+
+func init() {
+	installCmd.Flags().BoolVar(&installTailscale, "tailscale", false, "Also install Tailscale on the remote server")
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -89,6 +97,13 @@ func runInstall(p profile.Profile) error {
 	allOK := true
 	for _, step := range steps {
 		if !runPkgStep(p, port, ros, step) {
+			allOK = false
+		}
+	}
+
+	// Optional: install Tailscale
+	if installTailscale {
+		if !installRemoteTailscale(p, port, ros) {
 			allOK = false
 		}
 	}
@@ -227,6 +242,50 @@ func printManualInstallHint() {
 	fmt.Println("    Fedora        : sudo dnf install -y tmux mosh")
 	fmt.Println("    Arch          : sudo pacman -S --noconfirm tmux mosh")
 	fmt.Println("    macOS         : brew install tmux mosh")
+}
+
+// ── Tailscale installer ───────────────────────────────────────────────────────
+
+// installRemoteTailscale installs Tailscale on the remote server and prints
+// instructions for authenticating. Returns true on success.
+func installRemoteTailscale(p profile.Profile, port int, ros remoteOS) bool {
+	fmt.Printf("  %-26s", "tailscale...")
+
+	// Already installed?
+	out, _ := remoteCapture(p, port, "which tailscale 2>/dev/null")
+	if strings.TrimSpace(out) != "" {
+		fmt.Println("✅ Already installed")
+		printTailscaleAuthHint(p.Name)
+		return true
+	}
+
+	fmt.Println("Installing...")
+
+	var cmdStr string
+	if ros.pkgMgr == "brew" {
+		cmdStr = "brew install tailscale"
+	} else {
+		// Official Tailscale install script — works on all major Linux distros.
+		cmdStr = "curl -fsSL https://tailscale.com/install.sh | sh"
+	}
+
+	if err := remoteInteractive(p, port, cmdStr); err != nil {
+		fmt.Printf("  %-26s⚠  Failed\n", "")
+		fmt.Fprintln(os.Stderr, "  → Manual: https://tailscale.com/download/linux")
+		return false
+	}
+	fmt.Printf("  %-26s✅ Installed\n", "")
+	printTailscaleAuthHint(p.Name)
+	return true
+}
+
+func printTailscaleAuthHint(profileName string) {
+	fmt.Println()
+	fmt.Println("  → Authenticate Tailscale on the server:")
+	fmt.Println("    sudo tailscale up")
+	fmt.Println("  → Then update the profile with the server's Tailscale IP:")
+	fmt.Printf("    sshtie edit %s\n", profileName)
+	fmt.Println()
 }
 
 // ── SSH helpers ───────────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ainsuotain/sshtie/internal/profile"
+	"github.com/ainsuotain/sshtie/internal/tailscale"
 )
 
 func netAddr(host string, port int) string {
@@ -38,13 +39,14 @@ func Run(p profile.Profile) {
 		checkMoshServer(p, port),
 		checkUDP(p.Host, 60001),
 		checkTmux(p, port),
-		checkTailscale(),
+		checkTailscaleClient(),
+		checkTailscaleServer(p.Host),
 	}
 
 	// On Windows, mosh is not supported natively — mark checks as skipped.
 	if runtime.GOOS == "windows" {
-		results[1] = Result{"mosh-server", false, "Skipped (mosh not supported on Windows)"}
-		results[2] = Result{fmt.Sprintf("UDP port %d", 60001), false, "Skipped (mosh not supported on Windows)"}
+		results[1] = Result{"mosh-server", false, "Skipped (not supported on Windows)"}
+		results[2] = Result{fmt.Sprintf("UDP port %d", 60001), false, "Skipped (not supported on Windows)"}
 	}
 
 	strategy := "ssh only"
@@ -145,16 +147,24 @@ func checkTmux(p profile.Profile, port int) Result {
 	return Result{"tmux", true, version + " installed"}
 }
 
-func checkTailscale() Result {
-	_, err := exec.LookPath("tailscale")
-	if err != nil {
-		return Result{"Tailscale", false, "Not detected (optional)"}
+func checkTailscaleClient() Result {
+	if tailscale.ClientRunning() {
+		return Result{"Tailscale (client)", true, "Running"}
 	}
-	out, err := exec.Command("tailscale", "status", "--json").Output()
-	if err != nil || strings.Contains(string(out), `"BackendState":"Stopped"`) {
-		return Result{"Tailscale", false, "Installed but not running"}
+	if _, err := exec.LookPath("tailscale"); err != nil {
+		return Result{"Tailscale (client)", false, "Not installed (optional)"}
 	}
-	return Result{"Tailscale", true, "Running"}
+	return Result{"Tailscale (client)", false, "Installed but not running"}
+}
+
+func checkTailscaleServer(host string) Result {
+	if !tailscale.ClientRunning() {
+		return Result{"Tailscale (server)", false, "Skipped (client not running)"}
+	}
+	if tailscale.HostInNetwork(host) {
+		return Result{"Tailscale (server)", true, "Found in Tailscale network"}
+	}
+	return Result{"Tailscale (server)", false, "Not in Tailscale network"}
 }
 
 func buildSSHArgs(p profile.Profile, port int) []string {
