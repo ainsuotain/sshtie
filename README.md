@@ -31,6 +31,27 @@
 
 ---
 
+## Platform Compatibility
+
+The key factor is **what OS the server runs**, not the client.
+
+| Client | Server | mosh | tmux |
+|--------|--------|:----:|:----:|
+| Mac | Mac | ✅ | ✅ |
+| Mac | Linux | ✅ | ✅ |
+| Mac | Windows | ❌ | ❌ |
+| Linux | Mac | ✅ | ✅ |
+| Linux | Linux | ✅ | ✅ |
+| Linux | Windows | ❌ | ❌ |
+| Windows | Mac | ✅ | ✅ |
+| Windows | Linux | ✅ | ✅ |
+| Windows | Windows | ❌ | ❌ |
+
+> **Why?** `mosh-server` and `tmux` run on the **server** side — Windows servers don't support them.
+> Windows clients can use mosh if WSL has mosh installed; SSH always works on any combination.
+
+---
+
 ## Getting Started
 
 ### 3 Steps to Connect
@@ -50,17 +71,25 @@
 
 ### Step 1 — Register your server
 
+`sshtie add` opens an interactive TUI wizard. Navigate with Enter / ESC.
+
 ```
 $ sshtie add
 
-Profile name           : homeserver
-Host                   : 192.168.1.100
-User                   : alice
-Port                   [22]:
-SSH Key                [~/.ssh/id_ed25519]:
-tmux session           [main]:
-Network mode           [auto]:
+  sshtie add  New Profile        Step 1 / 7
 
+  ▶ Profile name    homeserver█
+  · Host            (required)
+  · User            (required)
+  · Port            22
+  · SSH Key         ~/.ssh/id_ed25519
+  · tmux session    main
+  · Network mode    auto
+
+  enter  next  •  esc  back  •  ctrl+c  cancel
+```
+
+```
 ✅ Profile 'homeserver' saved!
 → Try: sshtie connect homeserver
 ```
@@ -131,10 +160,12 @@ On failure, you always see *why*:
 
 | Command | Description |
 |---|---|
-| `sshtie add` | Add a new profile (interactive) |
+| `sshtie` | Launch interactive TUI profile picker |
+| `sshtie add` | Add a new profile (TUI wizard) |
 | `sshtie list` | List all profiles |
 | `sshtie connect <name>` | Connect to a profile |
 | `sshtie <name>` | Shorthand for connect |
+| `sshtie edit <name>` | Edit a profile in `$EDITOR` |
 | `sshtie install <name>` | Install mosh + tmux on remote server |
 | `sshtie doctor <name>` | Diagnose connection |
 | `sshtie remove <name>` | Remove a profile |
@@ -154,7 +185,8 @@ $ sshtie doctor homeserver
   mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
   UDP port 60001       ✅ Open (or filtered — mosh will confirm)
   tmux                 ✅ tmux 3.3a installed
-  Tailscale            ⚠  Not detected (optional)
+  Tailscale (client)   ✅ Running
+  Tailscale (server)   ✅ Found in Tailscale network
 
 → Recommended strategy: mosh + tmux
 → Ready to connect!
@@ -164,16 +196,51 @@ $ sshtie doctor homeserver
 
 ## Install
 
+### Client (sshtie tool)
+
+**macOS**
+```bash
+# Build from source (Homebrew tap coming soon)
+git clone https://github.com/ainsuotain/sshtie
+cd sshtie
+go build -o sshtie .
+sudo mv sshtie /usr/local/bin/
+```
+
+**Linux**
 ```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
-
-# Add to PATH
 sudo mv sshtie /usr/local/bin/
 ```
 
+**Windows**
+```powershell
+git clone https://github.com/ainsuotain/sshtie
+cd sshtie
+go build -o sshtie.exe .
+# Move sshtie.exe to a directory in %PATH%
+```
+> WSL is recommended for mosh support on Windows clients.
+
 Requires Go 1.22+. No external runtime dependencies — single static binary.
+
+---
+
+### Server Prerequisites
+
+**macOS server**
+- System Settings → General → Sharing → **Remote Login: ON**
+- Install mosh + tmux: `brew install mosh tmux` *(or use `sshtie install`)*
+
+**Linux server**
+- `sshd` must be running
+- Install mosh + tmux: `sudo apt install mosh tmux` *(or use `sshtie install`)*
+
+**Windows server**
+- Settings → Apps → Optional Features → **OpenSSH Server**
+- ⚠ mosh and tmux are **not supported** on Windows servers — SSH only
 
 ---
 
@@ -212,9 +279,10 @@ sshtie/
 ├── go.mod
 ├── cmd/
 │   ├── root.go       # cobra root + sshtie <name> shorthand
-│   ├── add.go        # interactive profile creation
+│   ├── add.go        # TUI wizard profile creation
 │   ├── connect.go    # connection entry point
-│   ├── install.go    # remote mosh + tmux installer
+│   ├── edit.go       # open profile in $EDITOR
+│   ├── install.go    # remote mosh + tmux + tailscale installer
 │   ├── list.go       # profile listing
 │   ├── doctor.go     # connectivity diagnostics
 │   └── remove.go     # profile deletion
@@ -222,6 +290,7 @@ sshtie/
     ├── profile/      # YAML read/write (~/.sshtie/profiles.yaml)
     ├── connector/    # connection strategy (mosh/ssh/tmux fallback)
     ├── doctor/       # diagnostics logic
+    ├── tailscale/    # Tailscale client/peer detection
     └── tui/          # Bubble Tea interactive profile picker
 ```
 
@@ -234,7 +303,7 @@ sshtie/
 | Language | Go 1.22 — single binary, cross-platform |
 | CLI framework | [Cobra](https://github.com/spf13/cobra) |
 | Config format | YAML ([gopkg.in/yaml.v3](https://pkg.go.dev/gopkg.in/yaml.v3)) |
-| TUI *(v0.2)* | [Bubble Tea](https://github.com/charmbracelet/bubbletea) |
+| TUI | [Bubble Tea](https://github.com/charmbracelet/bubbletea) + [Lipgloss](https://github.com/charmbracelet/lipgloss) |
 
 ---
 
@@ -252,12 +321,14 @@ sshtie/
 
 ### v0.2 — TUI ✅
 - [x] Bubble Tea TUI (runs when no args given)
-- [ ] `sshtie edit <name>`
-- [ ] Live connection status display
+- [x] `sshtie edit <name>` — open profile in $EDITOR
+- [x] TUI wizard for `sshtie add`
 
-### v0.3 — Polish
-- [ ] Tailscale auto-detection
+### v0.3 — Polish ✅
+- [x] Tailscale auto-detection (client + server)
+- [x] `sshtie install --tailscale`
 - [ ] Homebrew tap distribution
+- [ ] Live connection status display
 
 ---
 
