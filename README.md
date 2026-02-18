@@ -221,7 +221,8 @@ sshtie/
 └── internal/
     ├── profile/      # YAML read/write (~/.sshtie/profiles.yaml)
     ├── connector/    # connection strategy (mosh/ssh/tmux fallback)
-    └── doctor/       # diagnostics logic
+    ├── doctor/       # diagnostics logic
+    └── tui/          # Bubble Tea interactive profile picker
 ```
 
 ---
@@ -249,8 +250,8 @@ sshtie/
 - [x] `sshtie install` — remote mosh/tmux installer (apt/dnf/yum/brew/pacman)
 - [x] Windows / Linux / macOS cross-platform support
 
-### v0.2 — TUI
-- [ ] Bubble Tea TUI (runs when no args given)
+### v0.2 — TUI ✅
+- [x] Bubble Tea TUI (runs when no args given)
 - [ ] `sshtie edit <name>`
 - [ ] Live connection status display
 
