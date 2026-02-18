@@ -48,16 +48,16 @@ English docs: [README.md](README.md)
 ```
 $ sshtie add
 
-Profile name           : macmini
-Host                   : 192.168.1.10
-User                   : david
+Profile name           : homeserver
+Host                   : 192.168.1.100
+User                   : alice
 Port                   [22]:
 SSH Key                [~/.ssh/id_ed25519]:
 tmux session           [main]:
 Network mode           [auto]:
 
-✅ Profile 'macmini' saved!
-→ Try: sshtie connect macmini
+✅ Profile 'homeserver' saved!
+→ Try: sshtie connect homeserver
 ```
 
 필수 항목은 이름·호스트·유저 3가지만.
@@ -70,9 +70,9 @@ Network mode           [auto]:
 원격 서버에 mosh 또는 tmux가 없을 때:
 
 ```
-$ sshtie install macmini
+$ sshtie install homeserver
 
-🔧 Installing dependencies on macmini (192.168.1.10)...
+🔧 Installing dependencies on homeserver (192.168.1.100)...
 
   Detecting OS...           ✅ Ubuntu 22.04 LTS (apt)
   tmux...                   ✅ Already installed
@@ -95,16 +95,16 @@ $ sshtie install macmini
 ### 3단계 — 접속
 
 ```bash
-sshtie connect macmini
+sshtie connect homeserver
 
 # 단축 사용 (connect 생략 가능)
-sshtie macmini
+sshtie homeserver
 ```
 
 sshtie가 자동으로 최적 전략을 선택합니다:
 
 ```
-  sshtie connect macmini
+  sshtie connect homeserver
           │
           ▼
   ┌──────────────────────┐
@@ -149,9 +149,9 @@ sshtie가 자동으로 최적 전략을 선택합니다:
 접속 전 연결 상태를 미리 점검합니다:
 
 ```
-$ sshtie doctor macmini
+$ sshtie doctor homeserver
 
-🔍 Diagnosing: macmini (192.168.1.10)
+🔍 Diagnosing: homeserver (192.168.1.100)
 
   SSH connection       ✅ OK
   mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
@@ -186,9 +186,9 @@ Go 1.22 이상 필요. 외부 런타임 의존성 없음 — 단일 바이너리
 
 ```yaml
 profiles:
-  - name: macmini
-    host: 192.168.1.10
-    user: david
+  - name: homeserver
+    host: 192.168.1.100
+    user: alice
     port: 22                                    # 기본값: 22
     key: ~/.ssh/id_ed25519                      # 생략 시 기본 키 사용
     tmux_session: main                          # 기본값: main
@@ -198,7 +198,7 @@ profiles:
 
   - name: work-server
     host: work.example.com
-    user: dhkim
+    user: bob
     port: 2222
     tmux_session: work
     network: direct

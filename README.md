@@ -47,16 +47,16 @@
 ```
 $ sshtie add
 
-Profile name           : macmini
-Host                   : 192.168.1.10
-User                   : david
+Profile name           : homeserver
+Host                   : 192.168.1.100
+User                   : alice
 Port                   [22]:
 SSH Key                [~/.ssh/id_ed25519]:
 tmux session           [main]:
 Network mode           [auto]:
 
-✅ Profile 'macmini' saved!
-→ Try: sshtie connect macmini
+✅ Profile 'homeserver' saved!
+→ Try: sshtie connect homeserver
 ```
 
 ---
@@ -66,9 +66,9 @@ Network mode           [auto]:
 If mosh or tmux is not installed on your remote server:
 
 ```
-$ sshtie install macmini
+$ sshtie install homeserver
 
-🔧 Installing dependencies on macmini (192.168.1.10)...
+🔧 Installing dependencies on homeserver (192.168.1.100)...
 
   Detecting OS...           ✅ Ubuntu 22.04 LTS (apt)
   tmux...                   ✅ Already installed
@@ -86,16 +86,16 @@ Supported package managers: `apt` · `dnf` · `yum` · `brew` · `pacman`
 ### Step 3 — Connect
 
 ```bash
-sshtie connect macmini
+sshtie connect homeserver
 
 # shorthand (same thing)
-sshtie macmini
+sshtie homeserver
 ```
 
 sshtie automatically tries the best strategy:
 
 ```
-  sshtie connect macmini
+  sshtie connect homeserver
           │
           ▼
   ┌───────────────────┐
@@ -140,9 +140,9 @@ On failure, you always see *why*:
 Runs a full connectivity check before you connect:
 
 ```
-$ sshtie doctor macmini
+$ sshtie doctor homeserver
 
-🔍 Diagnosing: macmini (192.168.1.10)
+🔍 Diagnosing: homeserver (192.168.1.100)
 
   SSH connection       ✅ OK
   mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
@@ -177,9 +177,9 @@ Requires Go 1.22+. No external runtime dependencies — single static binary.
 
 ```yaml
 profiles:
-  - name: macmini
-    host: 192.168.1.10
-    user: david
+  - name: homeserver
+    host: 192.168.1.100
+    user: alice
     port: 22                                    # default: 22
     key: ~/.ssh/id_ed25519                      # uses default key if omitted
     tmux_session: main                          # default: main
@@ -189,7 +189,7 @@ profiles:
 
   - name: work-server
     host: work.example.com
-    user: dhkim
+    user: bob
     port: 2222
     tmux_session: work
     network: direct
