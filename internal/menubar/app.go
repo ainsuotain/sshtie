@@ -96,6 +96,15 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 	// ── actions ──
 	addItem := systray.AddMenuItem("Add Server…", "Open terminal to add a new profile")
 	refreshItem := systray.AddMenuItem("Refresh Status", "Re-check all servers now")
+
+	systray.AddSeparator()
+
+	loginLabel := "  Open at Login"
+	if IsAutoStartEnabled() {
+		loginLabel = "✓ Open at Login"
+	}
+	loginItem := systray.AddMenuItem(loginLabel, "Start sshtie automatically when you log in")
+
 	systray.AddSeparator()
 	quitItem := systray.AddMenuItem("Quit sshtie", "")
 
@@ -107,6 +116,14 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 			case <-refreshItem.ClickedCh:
 				profiles, _ := profile.Load()
 				go chk.CheckAll(profiles, trigger)
+			case <-loginItem.ClickedCh:
+				if IsAutoStartEnabled() {
+					_ = DisableAutoStart()
+					loginItem.SetTitle("  Open at Login")
+				} else {
+					_ = EnableAutoStart()
+					loginItem.SetTitle("✓ Open at Login")
+				}
 			case <-quitItem.ClickedCh:
 				systray.Quit()
 			}
