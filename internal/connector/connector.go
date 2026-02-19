@@ -61,7 +61,13 @@ func Connect(p profile.Profile) error {
 		if err := tryMosh(p, port, session); err == nil {
 			return nil
 		} else {
-			fmt.Fprintf(os.Stderr, "⚠  mosh failed: %v\n→ Falling back to SSH + tmux\n", err)
+			if strings.Contains(err.Error(), "UDP port") {
+				fmt.Fprintln(os.Stderr, "⚠  mosh: UDP 포트가 차단되어 있습니다.")
+				fmt.Fprintln(os.Stderr, "   서버에서 실행하세요: sudo ufw allow 60000:61000/udp")
+				fmt.Fprintln(os.Stderr, "→ SSH로 폴백합니다.")
+			} else {
+				fmt.Fprintf(os.Stderr, "⚠  mosh 실패: %v\n→ SSH + tmux로 폴백합니다.\n", err)
+			}
 		}
 	}
 

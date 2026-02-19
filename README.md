@@ -25,11 +25,13 @@
 | Problem | sshtie's Solution |
 |---|---|
 | SSH keeps dropping | mosh auto-connects first |
-| mosh UDP is blocked | Automatic SSH fallback |
+| mosh UDP is blocked | Automatic SSH fallback + firewall hint |
 | tmux attach every time | Auto attach/create on connect |
 | Different settings per server | Unified YAML profiles |
-| No mosh/tmux on new server | `sshtie install` sets it up |
+| No mosh/tmux on new server | Auto-detects and offers `sshtie install` |
 | On Tailscale network | Auto-detected and routed |
+| First-time SSH connection | Fingerprint warning before connecting |
+| Server uses password auth | `sshtie install` works without SSH key |
 
 ---
 
@@ -120,6 +122,11 @@ $ sshtie install homeserver
 → Running doctor check...
 ```
 
+Works with **both SSH key and password authentication** — if you haven't set up SSH keys yet, it will prompt for your server password.
+
+> **Tip:** You don't need to run `sshtie install` manually.
+> `sshtie connect` automatically detects missing dependencies and asks if you want to install them.
+
 To also install **Tailscale** on the server:
 
 ```bash
@@ -165,10 +172,28 @@ sshtie automatically tries the best strategy:
                           (bare connection)
 ```
 
-On failure, you always see *why*:
+On failure, you always see *why* — and what to do:
 ```
-⚠  mosh failed: UDP port 60001 appears blocked
-→  Falling back to SSH + tmux
+⚠  mosh: UDP 포트가 차단되어 있습니다.
+   서버에서 실행하세요: sudo ufw allow 60000:61000/udp
+→ SSH로 폴백합니다.
+```
+
+**Smart pre-connect checks** (new in v0.2):
+
+*First-time host — fingerprint warning:*
+```
+⚠  처음 접속하는 서버입니다 (192.168.1.100)
+   SSH 키가 자동으로 저장됩니다.
+계속할까요? (y/n):
+```
+
+*Missing mosh / tmux — auto-install offer:*
+```
+⚠  서버에 mosh-server, tmux 가 설치되어 있지 않습니다.
+지금 설치할까요? (y/n): y
+
+🔧 Installing dependencies on homeserver (192.168.1.100)...
 ```
 
 ---
@@ -248,9 +273,23 @@ sudo mv sshtie /usr/local/bin/
 
 **Windows (WSL)**
 ```bash
+# Important: run from your Linux home directory, not the Windows path.
+cd ~
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
 sudo mv sshtie /usr/local/bin/
 ```
+
+> **Why `cd ~` first?**
+> WSL often starts in `/mnt/c/Users/<you>` — a Windows-mounted path with restricted permissions.
+> Running `curl` or `sudo mv` from there causes `Permission denied` errors.
+> `cd ~` takes you to your real Linux home (`/home/<you>`) where everything works normally.
+>
+> To make WSL always start in your Linux home, add this to `/etc/wsl.conf`:
+> ```ini
+> [user]
+> default=<your-username>
+> ```
+> Then restart WSL: `wsl --shutdown` in PowerShell.
 
 ### macOS *(Homebrew)*
 ```bash
@@ -373,7 +412,17 @@ sshtie/
 - [x] `sshtie install --tailscale`
 - [x] Homebrew tap (`ainsuotain/homebrew-sshtie`)
 - [x] Pre-built binaries for all platforms
+
+### v0.2.1 — Smart UX ✅
+- [x] Auto-detect missing mosh/tmux on connect → offer to install
+- [x] `sshtie install` supports password authentication (no SSH key required)
+- [x] UDP blocked: show server-side firewall command (`sudo ufw allow 60000:61000/udp`)
+- [x] First-time SSH fingerprint warning before connecting
+- [x] WSL `cd ~` guidance in README
+
+### v0.4 — Next
 - [ ] Live connection status display
+- [ ] `sshtie jump` — SSH jump host / bastion support
 
 ---
 
