@@ -1,8 +1,8 @@
 class Sshtie < Formula
   desc "SSH + mosh + tmux profiles — one command to connect"
   homepage "https://github.com/ainsuotain/sshtie"
-  url "https://github.com/ainsuotain/sshtie/archive/refs/tags/v0.1.2.tar.gz"
-  sha256 "958afd5d8e121d0d430dfdef6d521b6d3790ff020c2630e7d1951c960891a3ed"
+  url "https://github.com/ainsuotain/sshtie/archive/refs/tags/v0.1.3.tar.gz"
+  sha256 "4b70aea0f2f65af8e3b4d06f1754d7cceafba2beb89c26bc6c32d0988f30eb74"
   license "Apache-2.0"
   head "https://github.com/ainsuotain/sshtie.git", branch: "main"
 
