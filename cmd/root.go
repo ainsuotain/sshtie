@@ -1,12 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/ainsuotain/sshtie/internal/connector"
 	"github.com/ainsuotain/sshtie/internal/doctor"
 	"github.com/ainsuotain/sshtie/internal/profile"
 	"github.com/ainsuotain/sshtie/internal/tui"
@@ -39,8 +37,7 @@ connection strategy automatically.
 			// Terminal is now fully restored; safe to exec ssh/mosh.
 			switch result.Action {
 			case tui.ActionConnect:
-				fmt.Printf("→ Connecting to %s (%s@%s)…\n", result.Profile.Name, result.Profile.User, result.Profile.Host)
-				return connector.Connect(result.Profile)
+				return runConnect(result.Profile)
 			case tui.ActionDoctor:
 				doctor.Run(result.Profile)
 				return nil
@@ -55,8 +52,7 @@ connection strategy automatically.
 		if err != nil {
 			return err
 		}
-		fmt.Printf("→ Connecting to %s (%s@%s)…\n", p.Name, p.User, p.Host)
-		return connector.Connect(p)
+		return runConnect(p)
 	},
 }
 
