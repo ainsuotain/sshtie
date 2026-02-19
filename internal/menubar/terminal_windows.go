@@ -22,16 +22,25 @@ func OpenAdd() {
 // openTerminal opens a new terminal window running the given command.
 // Priority: Windows Terminal → PowerShell → cmd.exe
 func openTerminal(shellCmd string) error {
-	// Windows Terminal (wt.exe) — available on Windows 10 1903+
-	if _, err := exec.LookPath("wt.exe"); err == nil {
-		return exec.Command("wt.exe", "new-tab", "--", "cmd.exe", "/K", shellCmd).Start()
+	// Wrap command with a banner so users see immediate feedback.
+	wrapped := fmt.Sprintf(
+		`echo. & echo  sshtie - connecting... & echo. & %s & echo. & echo  Session ended. Press any key to close. & pause >nul`,
+		shellCmd,
+	)
+
+	// Windows Terminal (wt.exe) — best ANSI support, Windows 10 1903+
+	if wt, err := exec.LookPath("wt.exe"); err == nil {
+		return exec.Command(wt, "new-tab", "--", "cmd.exe", "/K", wrapped).Start()
 	}
-	// PowerShell
-	if _, err := exec.LookPath("pwsh.exe"); err == nil {
-		return exec.Command("pwsh.exe", "-NoExit", "-Command", shellCmd).Start()
+	// PowerShell (pwsh or legacy powershell)
+	for _, ps := range []string{"pwsh.exe", "powershell.exe"} {
+		if _, err := exec.LookPath(ps); err == nil {
+			psCmd := fmt.Sprintf(`Write-Host ""; Write-Host "  sshtie - connecting..." -ForegroundColor Cyan; Write-Host ""; & %s`, shellCmd)
+			return exec.Command(ps, "-NoExit", "-Command", psCmd).Start()
+		}
 	}
 	// cmd.exe fallback
-	return exec.Command("cmd.exe", "/C", "start", "cmd.exe", "/K", shellCmd).Start()
+	return exec.Command("cmd.exe", "/C", "start", "cmd.exe", "/K", wrapped).Start()
 }
 
 // resolveBin returns the absolute path of the sshtie CLI binary.
