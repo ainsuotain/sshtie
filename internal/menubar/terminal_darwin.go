@@ -20,6 +20,11 @@ func OpenAdd() {
 	_ = openTerminal(fmt.Sprintf("%s add", resolveBin()))
 }
 
+// OpenEdit opens a terminal window and runs "sshtie edit <name>".
+func OpenEdit(profileName string) {
+	_ = openTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
+}
+
 // openTerminal tries iTerm2 first, then falls back to Terminal.app.
 func openTerminal(shellCmd string) error {
 	if isRunning("iTerm2") {

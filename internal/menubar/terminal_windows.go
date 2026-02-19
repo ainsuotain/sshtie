@@ -19,6 +19,11 @@ func OpenAdd() {
 	_ = openTerminal(fmt.Sprintf("%s add", resolveBin()))
 }
 
+// OpenEdit opens a terminal and runs "sshtie edit <name>".
+func OpenEdit(profileName string) {
+	_ = openTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
+}
+
 // openTerminal opens a new terminal window running the given command.
 // Priority: Windows Terminal → PowerShell → cmd.exe
 func openTerminal(shellCmd string) error {

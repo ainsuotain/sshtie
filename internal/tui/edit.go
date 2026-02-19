@@ -62,7 +62,7 @@ func defaultOpts(p profile.Profile) []editOpt {
 		},
 		{
 			label: "Alive interval",
-			min: 5, max: 60, value: aliveInterval, unit: "s",
+			min: 10, max: 60, value: aliveInterval, unit: "s",
 			extra: func(v int) string {
 				return fmt.Sprintf("ping every %ds", v)
 			},
