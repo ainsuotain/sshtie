@@ -1,6 +1,6 @@
-//go:build darwin
+//go:build darwin || windows
 
-// Package menubar implements the macOS status-bar application.
+// Package menubar implements the macOS / Windows system-tray application.
 package menubar
 
 import (

@@ -73,6 +73,20 @@ menubar:
 menubar-run: menubar
 	@open dist/sshtie-menubar.app
 
+tray-windows:
+	@echo "Building sshtie-tray.exe (windows/amd64)..."
+	@mkdir -p $(DIST)
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
+	    go build -ldflags "$(LDFLAGS)" \
+	    -o $(DIST)/sshtie-tray.exe ./menubar/
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
+	    go build -ldflags "$(LDFLAGS)" \
+	    -o $(DIST)/sshtie.exe .
+	@zip -j $(DIST)/sshtie-tray-windows-amd64.zip \
+	    $(DIST)/sshtie-tray.exe $(DIST)/sshtie.exe > /dev/null
+	@rm $(DIST)/sshtie-tray.exe $(DIST)/sshtie.exe
+	@echo "✅  $(DIST)/sshtie-tray-windows-amd64.zip"
+
 # ── GitHub Release ────────────────────────────────────────────────────────────
 # Usage: make release VERSION=v0.1.0
 #        (runs build first if dist/ is empty)
