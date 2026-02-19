@@ -148,6 +148,14 @@ func buildSSHBaseArgs(p profile.Profile, port int) []string {
 	args := []string{
 		"-p", strconv.Itoa(port),
 		"-o", "StrictHostKeyChecking=accept-new",
+		// Keepalive: sends a packet every 10s, tolerates up to 5 min of silence
+		// before dropping. Prevents tmux sessions dying on brief network blips.
+		"-o", "ServerAliveInterval=10",
+		"-o", "ServerAliveCountMax=30",
+		"-o", "TCPKeepAlive=yes",
+		// Disable multiplexing — causes subtle issues when tmux is involved.
+		"-o", "ControlMaster=no",
+		"-o", "ControlPath=none",
 	}
 	key := p.DefaultKey()
 	if _, err := os.Stat(key); err == nil {
