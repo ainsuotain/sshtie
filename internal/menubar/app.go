@@ -217,11 +217,13 @@ func faLabel(p profile.Profile) string {
 	return "Forward agent: off"
 }
 
-// nextInterval cycles through the preset values: 10 → 30 → 60 → 10 …
+// nextInterval returns the smallest preset strictly greater than current.
+// Wraps back to the first preset when current is already at (or beyond) the max.
+// Examples: 0→10, 10→30, 15→30, 30→60, 60→10, 99→10
 func nextInterval(current int) int {
-	for i, v := range intervalPresets {
-		if current <= v {
-			return intervalPresets[(i+1)%len(intervalPresets)]
+	for _, v := range intervalPresets {
+		if v > current {
+			return v
 		}
 	}
 	return intervalPresets[0]
