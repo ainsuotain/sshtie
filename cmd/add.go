@@ -33,16 +33,45 @@ type stepDef struct {
 	label    string
 	defVal   string // shown as hint; used when user presses Enter on empty
 	required bool
+	hint     string // contextual description shown in gray below the input
 }
 
 var steps = []stepDef{
-	{"Profile name", "", true},
-	{"Host", "", true},
-	{"User", "", true},
-	{"Port", "22", false},
-	{"SSH Key", "~/.ssh/id_ed25519", false},
-	{"tmux session", "main", false},
-	{"Network mode", "auto", false}, // selection — handled separately
+	{
+		label:    "Profile name",
+		required: true,
+		hint:     "A nickname for this connection  (e.g. macmini, work-server, linux01)",
+	},
+	{
+		label:    "Host",
+		required: true,
+		hint:     "Server IP or domain  (e.g. 192.168.1.10, server.com)",
+	},
+	{
+		label:    "User",
+		required: true,
+		hint:     "SSH login username  (e.g. david, ubuntu, root)",
+	},
+	{
+		label:  "Port",
+		defVal: "22",
+		hint:   "SSH port, usually 22  (press Enter if unsure)",
+	},
+	{
+		label:  "SSH Key",
+		defVal: "~/.ssh/id_ed25519",
+		hint:   "Path to private key  (press Enter if unsure)",
+	},
+	{
+		label:  "tmux session",
+		defVal: "main",
+		hint:   "Session name  (press Enter if unsure)",
+	},
+	{
+		label:  "Network mode",
+		defVal: "auto",
+		hint:   "auto recommended — detects Tailscale / mosh automatically",
+	},
 }
 
 const netStep = 6 // index of the network selection step
@@ -192,6 +221,11 @@ func (m addWizard) View() string {
 					sb.WriteString(wizHint.Render("  (required)"))
 				}
 				sb.WriteString("\n")
+			}
+
+			// Contextual hint shown below the input / selection.
+			if s.hint != "" {
+				sb.WriteString(wizHint.Render("    "+s.hint) + "\n")
 			}
 
 			if m.errMsg != "" {
