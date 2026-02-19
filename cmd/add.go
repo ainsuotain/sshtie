@@ -35,42 +35,41 @@ type stepDef struct {
 	required bool
 	hint     string // contextual description shown in gray below the input
 }
-
 var steps = []stepDef{
 	{
 		label:    "Profile name",
 		required: true,
-		hint:     "이 연결에 붙일 별명 (예: macmini, work-server)",
+		hint:     "A nickname for this connection (e.g., macmini, work-server)",
 	},
 	{
 		label:    "Host",
 		required: true,
-		hint:     "서버 IP 또는 도메인 (예: 192.168.1.10, server.com)",
+		hint:     "Server IP or domain (e.g., 192.168.1.10, server.com)",
 	},
 	{
 		label:    "User",
 		required: true,
-		hint:     "서버 SSH 로그인 계정명 (예: david, ubuntu, root)",
+		hint:     "SSH login username (e.g., david, ubuntu, root)",
 	},
 	{
 		label:  "Port",
 		defVal: "22",
-		hint:   "SSH 포트, 보통 22 (모르면 Enter)",
+		hint:   "SSH port, usually 22 (press Enter if unsure)",
 	},
 	{
 		label:  "SSH Key",
 		defVal: "~/.ssh/id_ed25519",
-		hint:   "개인키 경로, 모르면 Enter",
+		hint:   "Path to private key (press Enter if unsure)",
 	},
 	{
 		label:  "tmux session",
 		defVal: "main",
-		hint:   "세션 이름, 모르면 Enter",
+		hint:   "Session name (press Enter if unsure)",
 	},
 	{
 		label:  "Network mode",
 		defVal: "auto",
-		hint:   "auto 권장 — Tailscale/mosh 자동 감지",
+		hint:   "Recommended: auto — auto-detects Tailscale/mosh",
 	},
 }
 

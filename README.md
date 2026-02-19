@@ -174,24 +174,24 @@ sshtie automatically tries the best strategy:
 
 On failure, you always see *why* — and what to do:
 ```
-⚠  mosh: UDP 포트가 차단되어 있습니다.
-   서버에서 실행하세요: sudo ufw allow 60000:61000/udp
-→ SSH로 폴백합니다.
+⚠  mosh: UDP port is blocked, so mosh cannot be used for a faster connection.
+   To allow mosh connections, please run this command on your server: sudo ufw allow 60000:61000/udp
+→ Falling back to SSH to continue the connection.
 ```
 
 **Smart pre-connect checks** (new in v0.2):
 
 *First-time host — fingerprint warning:*
 ```
-⚠  처음 접속하는 서버입니다 (192.168.1.100)
-   SSH 키가 자동으로 저장됩니다.
-계속할까요? (y/n):
+⚠  You are connecting to this server for the first time (192.168.1.100).
+   The SSH key will be automatically saved to your known_hosts file.
+Do you want to continue connecting? (y/n):
 ```
 
 *Missing mosh / tmux — auto-install offer:*
 ```
-⚠  서버에 mosh-server, tmux 가 설치되어 있지 않습니다.
-지금 설치할까요? (y/n): y
+⚠  mosh-server and tmux are not currently installed on the server.
+Would you like to automatically install them now? (y/n): y
 
 🔧 Installing dependencies on homeserver (192.168.1.100)...
 ```
