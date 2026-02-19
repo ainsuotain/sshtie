@@ -62,11 +62,13 @@ func Connect(p profile.Profile) error {
 			return nil
 		} else {
 			if strings.Contains(err.Error(), "UDP port") {
-				fmt.Fprintln(os.Stderr, "⚠  mosh: UDP port is blocked by your server's firewall.")
-				fmt.Fprintln(os.Stderr, "   Run this on the server: sudo ufw allow 60000:61000/udp")
-				fmt.Fprintln(os.Stderr, "→ Falling back to SSH.")
+				fmt.Fprintln(os.Stderr, "⚠  mosh: the server's firewall is blocking UDP ports (60000–61000).")
+				fmt.Fprintln(os.Stderr, "   mosh needs these ports open to maintain a stable, reconnect-friendly session.")
+				fmt.Fprintln(os.Stderr, "   To fix it, run this command on your server:")
+				fmt.Fprintln(os.Stderr, "     sudo ufw allow 60000:61000/udp")
+				fmt.Fprintln(os.Stderr, "→ Falling back to SSH for now.")
 			} else {
-				fmt.Fprintf(os.Stderr, "⚠  mosh failed: %v\n→ Falling back to SSH + tmux.\n", err)
+				fmt.Fprintf(os.Stderr, "⚠  mosh failed (%v) — falling back to SSH + tmux.\n", err)
 			}
 		}
 	}
@@ -79,7 +81,7 @@ func connectSSH(p profile.Profile, port int, session string) error {
 	if err := trySSHTmux(p, port, session); err == nil {
 		return nil
 	} else {
-		fmt.Fprintf(os.Stderr, "⚠  ssh+tmux failed: %v\n→ Falling back to plain SSH\n", err)
+		fmt.Fprintf(os.Stderr, "⚠  ssh+tmux failed (%v) — falling back to a plain SSH session.\n", err)
 	}
 	return trySSH(p, port)
 }
