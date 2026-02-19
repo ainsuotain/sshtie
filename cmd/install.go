@@ -137,7 +137,7 @@ func runPkgStep(p profile.Profile, port int, ros remoteOS, step pkgStep) bool {
 	fmt.Println("Installing...")
 	if err := remoteInteractive(p, port, cmdStr); err != nil {
 		fmt.Printf("  %-26s⚠  Failed\n", "")
-		fmt.Fprintln(os.Stderr, "  → sudo 권한이 필요합니다. 서버 관리자에게 문의하세요.")
+		fmt.Fprintln(os.Stderr, "  → You may need sudo privileges. Ask your server admin if needed.")
 		fmt.Fprintf(os.Stderr, "  → Manual: %s\n", cmdStr)
 		return false
 	}

@@ -31,9 +31,9 @@ var connectCmd = &cobra.Command{
 
 		// 1. Fingerprint check — warn on first-time connections.
 		if !isKnownHost(p.Host, port) {
-			fmt.Printf("⚠  처음 접속하는 서버입니다 (%s)\n", p.Host)
-			fmt.Println("   SSH 키가 자동으로 저장됩니다.")
-			if !promptYN("계속할까요? (y/n): ") {
+			fmt.Printf("⚠  First time connecting to %s\n", p.Host)
+			fmt.Println("   The server's SSH key will be saved automatically.")
+			if !promptYN("Continue? (y/n): ") {
 				return nil
 			}
 		}
@@ -50,8 +50,8 @@ var connectCmd = &cobra.Command{
 			if !hasTmux {
 				missing = append(missing, "tmux")
 			}
-			fmt.Printf("⚠  서버에 %s 가 설치되어 있지 않습니다.\n", strings.Join(missing, ", "))
-			if promptYN("지금 설치할까요? (y/n): ") {
+			fmt.Printf("⚠  %s not found on the server.\n", strings.Join(missing, " and "))
+			if promptYN("Install them now? (y/n): ") {
 				if err := runInstall(p); err != nil {
 					return err
 				}
