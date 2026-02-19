@@ -1,11 +1,10 @@
-# sshtie
+# sshtie — mosh + tmux로 끊기지 않는 SSH 세션, 설정 불필요
 
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#)
 
-> **SSH + mosh + tmux를 하나로.**
-> 명령어 하나로 접속. 설정 고민 없이.
+> **한 번 접속하면 끊기지 않습니다. 자동 폴백, 자동 tmux, Tailscale 지원.**
 
 English docs: [README.md](README.md)
 
