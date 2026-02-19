@@ -27,9 +27,9 @@ Use --tailscale to also install Tailscale on the remote server.`,
 		name := args[0]
 		p, err := profile.Get(name)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Profile '%s' not found.\n", name)
-			fmt.Fprintln(os.Stderr, "→ Run 'sshtie list' to see available profiles.")
-			fmt.Fprintln(os.Stderr, "→ Run 'sshtie add' to register a new server.")
+			fmt.Fprintf(os.Stderr, "No profile named '%s' found.\n", name)
+			fmt.Fprintln(os.Stderr, "→ Run 'sshtie list' to see all your saved profiles.")
+			fmt.Fprintln(os.Stderr, "→ Run 'sshtie add' to add a new server.")
 			return nil
 		}
 		return runInstall(p)
@@ -61,27 +61,30 @@ func runInstall(p profile.Profile) error {
 		port = 22
 	}
 
-	fmt.Printf("\n🔧 Installing dependencies on %s (%s)...\n\n", p.Name, p.Host)
+	fmt.Printf("\n🔧 Installing mosh-server + tmux on %s (%s)...\n\n", p.Name, p.Host)
 
 	// Step 1: OS detection
 	fmt.Printf("  %-26s", "Detecting OS...")
 	ros, err := detectRemoteOS(p, port)
 	if err != nil {
-		fmt.Println("⚠  SSH connection failed")
-		fmt.Fprintf(os.Stderr, "  error: %v\n", err)
+		fmt.Println("⚠  SSH connection failed — couldn't reach the server.")
+		fmt.Fprintf(os.Stderr, "   error: %v\n", err)
+		fmt.Fprintln(os.Stderr, "   → Double-check the host address, port, and SSH key.")
+		fmt.Fprintf(os.Stderr, "   → Edit the profile with: sshtie edit %s\n", p.Name)
 		return nil
 	}
 
 	switch ros.pkgMgr {
 	case "":
 		if ros.display == "macos-no-brew" {
-			fmt.Println("⚠  macOS (Homebrew not installed)")
+			fmt.Println("⚠  macOS detected, but Homebrew isn't installed on this server.")
 			fmt.Println()
-			fmt.Println("  → Homebrew is not installed on the remote server.")
-			fmt.Println("  → Install it first: https://brew.sh")
+			fmt.Println("  mosh and tmux are installed via Homebrew on macOS.")
+			fmt.Println("  Please install Homebrew on the server first, then re-run this command.")
+			fmt.Println("  → https://brew.sh")
 			return nil
 		}
-		fmt.Printf("⚠  %s — unknown package manager\n", ros.display)
+		fmt.Printf("⚠  Unsupported OS: %s — couldn't detect a known package manager.\n", ros.display)
 		printManualInstallHint()
 		return nil
 	default:
@@ -111,13 +114,13 @@ func runInstall(p profile.Profile) error {
 	// Summary
 	fmt.Println()
 	if allOK {
-		fmt.Println("→ Server is ready!")
+		fmt.Println("🎉 All done! Your server is ready.")
 	} else {
-		fmt.Println("→ Some packages failed to install. See hints above.")
+		fmt.Println("⚠  Some packages couldn't be installed — see the errors above for details.")
 	}
-	fmt.Println("→ Running doctor check...")
+	fmt.Println("→ Running a quick check to confirm everything is set up correctly...")
 	doctor.Run(p)
-	fmt.Printf("→ Try: sshtie connect %s\n\n", p.Name)
+	fmt.Printf("→ You're all set! Run: sshtie connect %s\n\n", p.Name)
 	return nil
 }
 
@@ -137,8 +140,9 @@ func runPkgStep(p profile.Profile, port int, ros remoteOS, step pkgStep) bool {
 	fmt.Println("Installing...")
 	if err := remoteInteractive(p, port, cmdStr); err != nil {
 		fmt.Printf("  %-26s⚠  Failed\n", "")
-		fmt.Fprintln(os.Stderr, "  → You may need sudo privileges. Ask your server admin if needed.")
-		fmt.Fprintf(os.Stderr, "  → Manual: %s\n", cmdStr)
+		fmt.Fprintln(os.Stderr, "  → Installation failed. This usually means the account doesn't have sudo access.")
+		fmt.Fprintln(os.Stderr, "  → Ask your server admin to run this command instead:")
+		fmt.Fprintf(os.Stderr, "       %s\n", cmdStr)
 		return false
 	}
 	fmt.Printf("  %-26s✅ Installed\n", "")

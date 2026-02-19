@@ -32,7 +32,7 @@ func Run(p profile.Profile) {
 		port = 22
 	}
 
-	fmt.Printf("\n🔍 Diagnosing: %s (%s)\n\n", p.Name, p.Host)
+	fmt.Printf("\n🔍 Checking connectivity to %s (%s)\n\n", p.Name, p.Host)
 
 	results := []Result{
 		checkSSH(p, port),
@@ -75,9 +75,9 @@ func Run(p profile.Profile) {
 
 	fmt.Printf("\n→ Recommended strategy: %s\n", strategy)
 	if results[0].OK {
-		fmt.Println("→ Ready to connect!")
+		fmt.Printf("→ You're all set! Run: sshtie connect %s\n", p.Name)
 	} else {
-		fmt.Println("→ SSH unreachable — check host/port/key.")
+		fmt.Printf("→ SSH unreachable — double-check the host (%s), port (%d), and your SSH key.\n", p.Host, port)
 	}
 	fmt.Println()
 }
@@ -85,10 +85,10 @@ func Run(p profile.Profile) {
 func checkSSH(p profile.Profile, port int) Result {
 	conn, err := net.DialTimeout("tcp", netAddr(p.Host, port), 5*time.Second)
 	if err != nil {
-		return Result{"SSH connection", false, err.Error()}
+		return Result{"SSH connection", false, fmt.Sprintf("Unreachable (%v)", err)}
 	}
 	conn.Close()
-	return Result{"SSH connection", true, "OK"}
+	return Result{"SSH connection", true, "Reachable"}
 }
 
 func checkMoshServer(p profile.Profile, port int) Result {
@@ -112,7 +112,7 @@ func checkMoshServer(p profile.Profile, port int) Result {
 				return Result{"mosh-server", true, fmt.Sprintf("Found (%s)", strings.TrimSpace(string(o)))}
 			}
 		}
-		return Result{"mosh-server", false, "Not found on remote"}
+		return Result{"mosh-server", false, fmt.Sprintf("Not installed — run: sshtie install %s", p.Name)}
 	}
 	path := strings.TrimSpace(string(out))
 	return Result{"mosh-server", true, fmt.Sprintf("Found (%s)", path)}
@@ -130,9 +130,9 @@ func checkUDP(host string, port int) Result {
 	buf := make([]byte, 1)
 	_, readErr := conn.Read(buf)
 	if readErr != nil && strings.Contains(readErr.Error(), "connection refused") {
-		return Result{label, false, "ICMP port unreachable"}
+		return Result{label, false, "Blocked — on the server, run: sudo ufw allow 60000:61000/udp"}
 	}
-	return Result{label, true, "Open (or filtered — mosh will confirm)"}
+	return Result{label, true, "Open (mosh will confirm on connect)"}
 }
 
 func checkTmux(p profile.Profile, port int) Result {
@@ -142,7 +142,7 @@ func checkTmux(p profile.Profile, port int) Result {
 	out, err := exec.Command("ssh", args...).Output()
 	version := strings.TrimSpace(string(out))
 	if err != nil || version == "" {
-		return Result{"tmux", false, "Not found on remote"}
+		return Result{"tmux", false, fmt.Sprintf("Not installed — run: sshtie install %s", p.Name)}
 	}
 	return Result{"tmux", true, version + " installed"}
 }
@@ -152,19 +152,19 @@ func checkTailscaleClient() Result {
 		return Result{"Tailscale (client)", true, "Running"}
 	}
 	if _, err := exec.LookPath("tailscale"); err != nil {
-		return Result{"Tailscale (client)", false, "Not installed (optional)"}
+		return Result{"Tailscale (client)", false, "Not installed (optional — only needed for Tailscale routing)"}
 	}
-	return Result{"Tailscale (client)", false, "Installed but not running"}
+	return Result{"Tailscale (client)", false, "Installed but not active — run: tailscale up"}
 }
 
 func checkTailscaleServer(host string) Result {
 	if !tailscale.ClientRunning() {
-		return Result{"Tailscale (server)", false, "Skipped (client not running)"}
+		return Result{"Tailscale (server)", false, "Skipped (Tailscale client not running on this machine)"}
 	}
 	if tailscale.HostInNetwork(host) {
 		return Result{"Tailscale (server)", true, "Found in Tailscale network"}
 	}
-	return Result{"Tailscale (server)", false, "Not in Tailscale network"}
+	return Result{"Tailscale (server)", false, "Not visible — check 'tailscale status' on the server"}
 }
 
 func buildSSHArgs(p profile.Profile, port int) []string {

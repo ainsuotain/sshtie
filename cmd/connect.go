@@ -31,8 +31,8 @@ var connectCmd = &cobra.Command{
 
 		// 1. Fingerprint check — warn on first-time connections.
 		if !isKnownHost(p.Host, port) {
-			fmt.Printf("⚠  First time connecting to %s\n", p.Host)
-			fmt.Println("   The server's SSH key will be saved automatically.")
+			fmt.Printf("\n⚠  This is your first time connecting to %s.\n", p.Host)
+			fmt.Println("   SSH will verify and save the server's fingerprint to keep you secure on future connections.")
 			if !promptYN("Continue? (y/n): ") {
 				return nil
 			}
@@ -50,7 +50,8 @@ var connectCmd = &cobra.Command{
 			if !hasTmux {
 				missing = append(missing, "tmux")
 			}
-			fmt.Printf("⚠  %s not found on the server.\n", strings.Join(missing, " and "))
+			fmt.Printf("\n⚠  %s is not installed on the server yet.\n", strings.Join(missing, " and "))
+			fmt.Println("   These tools enable stable, resumable sessions — highly recommended.")
 			if promptYN("Install them now? (y/n): ") {
 				if err := runInstall(p); err != nil {
 					return err
