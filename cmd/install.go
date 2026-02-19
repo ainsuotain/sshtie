@@ -290,11 +290,15 @@ func printTailscaleAuthHint(profileName string) {
 
 // ── SSH helpers ───────────────────────────────────────────────────────────────
 
-// remoteCapture runs a command non-interactively and returns combined output.
+// remoteCapture runs a command non-interactively and returns stdout.
+// Stdin and Stderr are forwarded so password prompts appear on the terminal.
 func remoteCapture(p profile.Profile, port int, command string) (string, error) {
 	args := installSSHArgs(p, port, false)
 	args = append(args, command)
-	out, err := exec.Command("ssh", args...).CombinedOutput()
+	cmd := exec.Command("ssh", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
 	return strings.TrimSpace(string(out)), err
 }
 
@@ -314,11 +318,10 @@ func installSSHArgs(p profile.Profile, port int, interactive bool) []string {
 		"-p", strconv.Itoa(port),
 		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=10",
+		// No BatchMode — allows password authentication on servers without SSH keys.
 	}
 	if interactive {
-		args = append(args, "-t") // PTY for sudo password prompts
-	} else {
-		args = append(args, "-o", "BatchMode=yes")
+		args = append(args, "-t") // PTY for sudo / password prompts
 	}
 	key := p.DefaultKey()
 	if _, err := os.Stat(key); err == nil {
