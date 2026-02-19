@@ -54,6 +54,35 @@ English docs: [README.md](README.md)
 
 ---
 
+## 실제 사용 예시
+
+**시나리오: Windows 노트북 → Linux 서버 (첫 접속)**
+
+```bash
+# 1. sshtie 설치 (WSL)
+cd ~
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+
+# 2. 서버 등록
+sshtie add
+→ 프로파일 이름: myserver
+→ Host: 192.168.1.100
+→ User: david
+→ (나머지는 Enter)
+
+# 3. 접속
+sshtie connect myserver
+```
+
+**sshtie가 자동으로 해주는 것들:**
+- 첫 접속이면 fingerprint 경고를 보여주고 확인 요청
+- 서버에 mosh/tmux가 없으면 설치 여부 물어봄
+- UDP가 막혀있으면 방화벽 해제 명령어를 직접 안내
+- mosh 사용 가능 → mosh + tmux 연결; 불가능하면 ssh + tmux로 자동 전환
+
+---
+
 ## 시작하기
 
 ### 3단계로 접속

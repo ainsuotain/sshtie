@@ -56,6 +56,35 @@ The key factor is **what OS the server runs**, not the client.
 
 ---
 
+## Real-world Example
+
+**Scenario: Windows laptop → Linux server (first time)**
+
+```bash
+# 1. Install sshtie (WSL)
+cd ~
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+
+# 2. Register your server
+sshtie add
+→ Profile name: myserver
+→ Host: 192.168.1.100
+→ User: david
+→ (press Enter for the rest)
+
+# 3. Connect
+sshtie connect myserver
+```
+
+**What sshtie does automatically:**
+- First connection? Shows fingerprint warning and asks to confirm
+- No mosh/tmux on server? Offers to install them for you
+- UDP blocked? Prints the exact firewall command to unblock it
+- mosh available → connects via mosh + tmux; otherwise falls back to ssh + tmux
+
+---
+
 ## Getting Started
 
 ### 3 Steps to Connect
