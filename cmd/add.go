@@ -21,7 +21,7 @@ var (
 	wizActive   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212"))
 	wizPending  = lipgloss.NewStyle().Foreground(lipgloss.Color("242"))
 	wizInput    = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	wizHint     = lipgloss.NewStyle().Foreground(lipgloss.Color("242"))
+	wizHint     = lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
 	wizErr      = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 	wizSelOn    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212"))
 	wizSelOff   = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
@@ -236,6 +236,9 @@ func (m addWizard) View() string {
 			sb.WriteString(wizPending.Render(fmt.Sprintf("  · %-16s", s.label)))
 			if s.defVal != "" {
 				sb.WriteString(wizHint.Render(s.defVal))
+			} else if s.hint != "" {
+				// Show a short preview of the hint for required fields.
+				sb.WriteString(wizHint.Render(s.hint))
 			}
 			sb.WriteString("\n")
 		}

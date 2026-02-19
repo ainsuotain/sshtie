@@ -51,7 +51,10 @@ func withTerminalApp(cmd string) error {
 	script := fmt.Sprintf(`
 tell application "Terminal"
 	activate
-	do script "%s"
+	set w to do script "%s"
+	tell window of w
+		set bounds to {100, 100, 1000, 700}
+	end tell
 end tell`, escAS(cmd))
 	return exec.Command("osascript", "-e", script).Run()
 }
