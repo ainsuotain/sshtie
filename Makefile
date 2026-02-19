@@ -12,7 +12,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 LDFLAGS := -s -w -X main.version=$(VERSION)
 DIST    := dist
 
-.PHONY: all build release update-formula clean
+.PHONY: all build menubar menubar-run release update-formula clean
 
 all: build
 
@@ -64,6 +64,14 @@ build:
 	@echo "✅  Done!  $(DIST)/"
 	@echo ""
 	@cat $(DIST)/SHA256SUMS
+
+# ── macOS Menu-bar App (darwin only, requires CGO) ───────────────────────────
+
+menubar:
+	@bash build/darwin/build-app.sh $(VERSION)
+
+menubar-run: menubar
+	@open dist/sshtie-menubar.app
 
 # ── GitHub Release ────────────────────────────────────────────────────────────
 # Usage: make release VERSION=v0.1.0
