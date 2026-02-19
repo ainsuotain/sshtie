@@ -1,7 +1,7 @@
 # sshtie
 
 [![Go](https://img.shields.io/badge/Go-1.22-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#)
 
 > **SSH + mosh + tmux를 하나로.**
@@ -354,4 +354,4 @@ sshtie/
 ---
 
 *Made with ❤️ by [Donghwan Kim (David Kim)](https://github.com/ainsuotain)*
-License: [Apache 2.0](LICENSE)
+License: [MIT](LICENSE)
