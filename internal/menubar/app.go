@@ -5,12 +5,14 @@ package menubar
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"fyne.io/systray"
 
 	"github.com/ainsuotain/sshtie/internal/checker"
 	"github.com/ainsuotain/sshtie/internal/profile"
+	"github.com/ainsuotain/sshtie/internal/session"
 )
 
 // Run starts the macOS menu-bar app. It blocks until the user clicks Quit.
@@ -40,15 +42,19 @@ func onReady() {
 	profiles, _ := profile.Load()
 	buildMenu(profiles, chk, trigger)
 	go chk.CheckAll(profiles, trigger)
+	go chk.RefreshSessions(trigger)
 
-	// Background loop: re-check every 60 s, rebuild on change.
+	// Background loop: re-check every 60 s, sessions every 5 s.
 	go func() {
-		ticker := time.NewTicker(60 * time.Second)
+		tcpTicker := time.NewTicker(60 * time.Second)
+		sessTicker := time.NewTicker(5 * time.Second)
 		for {
 			select {
-			case <-ticker.C:
-				profiles, _ = profile.Load() // pick up newly added servers
+			case <-tcpTicker.C:
+				profiles, _ = profile.Load()
 				go chk.CheckAll(profiles, trigger)
+			case <-sessTicker.C:
+				go chk.RefreshSessions(trigger)
 			case <-rebuildCh:
 				profiles, _ = profile.Load()
 				buildMenu(profiles, chk, trigger)
@@ -78,16 +84,37 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 	} else {
 		for _, p := range profiles {
 			reachable, known := chk.Get(p.Name)
-			label := menuLabel(p.Name, reachable, known)
+			activeSess, isActive := chk.ActiveSession(p.Name)
+			label := menuLabel(p.Name, reachable, known, isActive)
 			tooltip := fmt.Sprintf("%s@%s · port %d", p.User, p.Host, portOf(p))
+			if isActive {
+				tooltip += fmt.Sprintf(" · connected via %s", activeSess.Method)
+			}
 			item := systray.AddMenuItem(label, tooltip)
 
 			pCopy := p
-			go func() {
-				for range item.ClickedCh {
-					OpenConnect(pCopy.Name)
-				}
-			}()
+			if isActive {
+				// Show sub-item to disconnect.
+				disconnectItem := item.AddSubMenuItem("Disconnect", "Terminate this connection")
+				go func(s session.Session) {
+					for range disconnectItem.ClickedCh {
+						killSession(s)
+						trigger()
+					}
+				}(activeSess)
+
+				go func() {
+					for range item.ClickedCh {
+						OpenConnect(pCopy.Name)
+					}
+				}()
+			} else {
+				go func() {
+					for range item.ClickedCh {
+						OpenConnect(pCopy.Name)
+					}
+				}()
+			}
 		}
 	}
 
@@ -114,8 +141,9 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 			case <-addItem.ClickedCh:
 				OpenAdd()
 			case <-refreshItem.ClickedCh:
-				profiles, _ := profile.Load()
-				go chk.CheckAll(profiles, trigger)
+				ps, _ := profile.Load()
+				go chk.CheckAll(ps, trigger)
+				go chk.RefreshSessions(trigger)
 			case <-loginItem.ClickedCh:
 				if IsAutoStartEnabled() {
 					_ = DisableAutoStart()
@@ -131,14 +159,35 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 	}()
 }
 
-func menuLabel(name string, reachable, known bool) string {
+// killSession terminates the process recorded in the session file.
+func killSession(s session.Session) {
+	if s.PID <= 0 {
+		return
+	}
+	p, err := os.FindProcess(s.PID)
+	if err != nil {
+		return
+	}
+	_ = p.Kill()
+	_ = session.Delete(s.Profile)
+}
+
+func menuLabel(name string, reachable, known, active bool) string {
+	prefix := statusDot(reachable, known)
+	if active {
+		return prefix + "● " + name
+	}
+	return prefix + name
+}
+
+func statusDot(reachable, known bool) string {
 	switch {
 	case !known:
-		return "🟡  " + name // still checking
+		return "🟡  "
 	case reachable:
-		return "🟢  " + name
+		return "🟢  "
 	default:
-		return "🔴  " + name
+		return "🔴  "
 	}
 }
 

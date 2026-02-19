@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ainsuotain/sshtie/internal/profile"
+	sess "github.com/ainsuotain/sshtie/internal/session"
 	"github.com/ainsuotain/sshtie/internal/tailscale"
 )
 
@@ -87,7 +88,7 @@ func connectSSH(p profile.Profile, port int, session string) error {
 }
 
 // tryMosh launches mosh → tmux attach/new.
-func tryMosh(p profile.Profile, port int, session string) error {
+func tryMosh(p profile.Profile, port int, tmuxSession string) error {
 	moshBin, err := findMosh()
 	if err != nil {
 		return fmt.Errorf("mosh not found in PATH")
@@ -105,22 +106,27 @@ func tryMosh(p profile.Profile, port int, session string) error {
 		args = append(args, "--server="+p.MoshServer)
 	}
 	args = append(args, fmt.Sprintf("%s@%s", p.User, p.Host))
-	args = append(args, "--", "tmux", "new-session", "-A", "-s", session)
+	args = append(args, "--", "tmux", "new-session", "-A", "-s", tmuxSession)
 
 	cmd := exec.Command(moshBin, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	_ = sess.Write(sess.Session{Profile: p.Name, PID: cmd.Process.Pid, Method: "mosh", StartedAt: time.Now()})
+	defer sess.Delete(p.Name)
+	return cmd.Wait()
 }
 
 // trySSHTmux connects via SSH and attaches/creates a tmux session.
-func trySSHTmux(p profile.Profile, port int, session string) error {
+func trySSHTmux(p profile.Profile, port int, tmuxSession string) error {
 	if !tcpReachable(p.Host, port, 5*time.Second) {
 		return fmt.Errorf("TCP port %d unreachable", port)
 	}
 
-	remoteCmd := fmt.Sprintf("tmux new-session -A -s %s", session)
+	remoteCmd := fmt.Sprintf("tmux new-session -A -s %s", tmuxSession)
 	args := buildSSHBaseArgs(p, port)
 	args = append(args, "-t", fmt.Sprintf("%s@%s", p.User, p.Host))
 	args = append(args, remoteCmd)
@@ -129,7 +135,12 @@ func trySSHTmux(p profile.Profile, port int, session string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	_ = sess.Write(sess.Session{Profile: p.Name, PID: cmd.Process.Pid, Method: "ssh+tmux", StartedAt: time.Now()})
+	defer sess.Delete(p.Name)
+	return cmd.Wait()
 }
 
 // trySSH does a plain SSH connection.
@@ -141,7 +152,12 @@ func trySSH(p profile.Profile, port int) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	_ = sess.Write(sess.Session{Profile: p.Name, PID: cmd.Process.Pid, Method: "ssh", StartedAt: time.Now()})
+	defer sess.Delete(p.Name)
+	return cmd.Wait()
 }
 
 func buildSSHBaseArgs(p profile.Profile, port int) []string {
