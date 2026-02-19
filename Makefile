@@ -25,34 +25,34 @@ build:
 
 	@printf "  %-18s" "linux/amd64"
 	@GOOS=linux   GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
-	    -o $(DIST)/$(BINARY)-linux-amd64 .
+	    -o $(DIST)/$(BINARY) .
 	@tar -czf $(DIST)/$(BINARY)-linux-amd64.tar.gz \
-	    -C $(DIST) $(BINARY)-linux-amd64
-	@rm $(DIST)/$(BINARY)-linux-amd64
+	    -C $(DIST) $(BINARY)
+	@rm $(DIST)/$(BINARY)
 	@echo "✅  $(DIST)/$(BINARY)-linux-amd64.tar.gz"
 
 	@printf "  %-18s" "darwin/amd64"
 	@GOOS=darwin  GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
-	    -o $(DIST)/$(BINARY)-darwin-amd64 .
+	    -o $(DIST)/$(BINARY) .
 	@tar -czf $(DIST)/$(BINARY)-darwin-amd64.tar.gz \
-	    -C $(DIST) $(BINARY)-darwin-amd64
-	@rm $(DIST)/$(BINARY)-darwin-amd64
+	    -C $(DIST) $(BINARY)
+	@rm $(DIST)/$(BINARY)
 	@echo "✅  $(DIST)/$(BINARY)-darwin-amd64.tar.gz"
 
 	@printf "  %-18s" "darwin/arm64"
 	@GOOS=darwin  GOARCH=arm64 go build -ldflags "$(LDFLAGS)" \
-	    -o $(DIST)/$(BINARY)-darwin-arm64 .
+	    -o $(DIST)/$(BINARY) .
 	@tar -czf $(DIST)/$(BINARY)-darwin-arm64.tar.gz \
-	    -C $(DIST) $(BINARY)-darwin-arm64
-	@rm $(DIST)/$(BINARY)-darwin-arm64
+	    -C $(DIST) $(BINARY)
+	@rm $(DIST)/$(BINARY)
 	@echo "✅  $(DIST)/$(BINARY)-darwin-arm64.tar.gz"
 
 	@printf "  %-18s" "windows/amd64"
 	@GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
-	    -o $(DIST)/$(BINARY)-windows-amd64.exe .
+	    -o $(DIST)/$(BINARY).exe .
 	@zip -j $(DIST)/$(BINARY)-windows-amd64.zip \
-	    $(DIST)/$(BINARY)-windows-amd64.exe > /dev/null
-	@rm $(DIST)/$(BINARY)-windows-amd64.exe
+	    $(DIST)/$(BINARY).exe > /dev/null
+	@rm $(DIST)/$(BINARY).exe
 	@echo "✅  $(DIST)/$(BINARY)-windows-amd64.zip"
 
 	@echo ""

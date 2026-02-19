@@ -196,38 +196,45 @@ $ sshtie doctor homeserver
 
 ## Install
 
-### Client (sshtie tool)
+### Pre-built binaries *(recommended)*
 
-**macOS** *(Homebrew — recommended)*
+**Linux**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**macOS — Apple Silicon (M1/M2/M3)**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-arm64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**macOS — Intel**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**Windows (WSL)**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+### macOS *(Homebrew)*
 ```bash
 brew tap ainsuotain/sshtie
 brew install sshtie
 ```
 
-**macOS** *(build from source)*
+### Build from source
 ```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
 sudo mv sshtie /usr/local/bin/
 ```
-
-**Linux**
-```bash
-git clone https://github.com/ainsuotain/sshtie
-cd sshtie
-go build -o sshtie .
-sudo mv sshtie /usr/local/bin/
-```
-
-**Windows**
-```powershell
-git clone https://github.com/ainsuotain/sshtie
-cd sshtie
-go build -o sshtie.exe .
-# Move sshtie.exe to a directory in %PATH%
-```
-> WSL is recommended for mosh support on Windows clients.
 
 Requires Go 1.22+. No external runtime dependencies — single static binary.
 

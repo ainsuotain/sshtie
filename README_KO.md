@@ -205,38 +205,45 @@ $ sshtie doctor homeserver
 
 ## 설치
 
-### 클라이언트 (sshtie 툴)
+### 사전 빌드 바이너리 *(권장)*
 
-**macOS** *(Homebrew — 권장)*
+**Linux**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**macOS — Apple Silicon (M1/M2/M3)**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-arm64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**macOS — Intel**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+**Windows (WSL)**
+```bash
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
+sudo mv sshtie /usr/local/bin/
+```
+
+### macOS *(Homebrew)*
 ```bash
 brew tap ainsuotain/sshtie
 brew install sshtie
 ```
 
-**macOS** *(소스에서 빌드)*
+### 소스에서 빌드
 ```bash
 git clone https://github.com/ainsuotain/sshtie
 cd sshtie
 go build -o sshtie .
 sudo mv sshtie /usr/local/bin/
 ```
-
-**Linux**
-```bash
-git clone https://github.com/ainsuotain/sshtie
-cd sshtie
-go build -o sshtie .
-sudo mv sshtie /usr/local/bin/
-```
-
-**Windows**
-```powershell
-git clone https://github.com/ainsuotain/sshtie
-cd sshtie
-go build -o sshtie.exe .
-# sshtie.exe를 %PATH% 경로에 복사
-```
-> WSL 환경에서는 mosh도 사용 가능합니다.
 
 Go 1.22 이상 필요. 외부 런타임 의존성 없음 — 단일 바이너리.
 
