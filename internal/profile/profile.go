@@ -19,6 +19,12 @@ type Profile struct {
 	MoshServer  string   `yaml:"mosh_server,omitempty"`
 	Network     string   `yaml:"network"` // auto | tailscale | direct
 	Tags        []string `yaml:"tags,omitempty"`
+
+	// Advanced SSH options (0/false = use built-in default).
+	ForwardAgent        bool `yaml:"forward_agent,omitempty"`
+	ServerAliveInterval int  `yaml:"server_alive_interval,omitempty"` // default 10 s
+	ServerAliveCountMax int  `yaml:"server_alive_count_max,omitempty"` // default 60
+	ConnectionAttempts  int  `yaml:"connection_attempts,omitempty"`    // default 3
 }
 
 type store struct {

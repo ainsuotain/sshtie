@@ -161,17 +161,32 @@ func trySSH(p profile.Profile, port int) error {
 }
 
 func buildSSHBaseArgs(p profile.Profile, port int) []string {
+	aliveInterval := p.ServerAliveInterval
+	if aliveInterval <= 0 {
+		aliveInterval = 10
+	}
+	aliveCount := p.ServerAliveCountMax
+	if aliveCount <= 0 {
+		aliveCount = 60
+	}
+	attempts := p.ConnectionAttempts
+	if attempts <= 0 {
+		attempts = 3
+	}
+
 	args := []string{
 		"-p", strconv.Itoa(port),
 		"-o", "StrictHostKeyChecking=accept-new",
-		// Keepalive: sends a packet every 10s, tolerates up to 5 min of silence
-		// before dropping. Prevents tmux sessions dying on brief network blips.
-		"-o", "ServerAliveInterval=10",
-		"-o", "ServerAliveCountMax=60",
+		"-o", fmt.Sprintf("ServerAliveInterval=%d", aliveInterval),
+		"-o", fmt.Sprintf("ServerAliveCountMax=%d", aliveCount),
 		"-o", "TCPKeepAlive=yes",
+		"-o", fmt.Sprintf("ConnectionAttempts=%d", attempts),
 		// Disable multiplexing — causes subtle issues when tmux is involved.
 		"-o", "ControlMaster=no",
 		"-o", "ControlPath=none",
+	}
+	if p.ForwardAgent {
+		args = append(args, "-o", "ForwardAgent=yes")
 	}
 	key := p.DefaultKey()
 	if _, err := os.Stat(key); err == nil {

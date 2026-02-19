@@ -259,7 +259,19 @@ func (m addWizard) View() string {
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add a new profile (interactive TUI wizard)",
-	Args:  cobra.NoArgs,
+	Long: `Add a new SSH connection profile via an interactive wizard.
+
+Advanced SSH options can be set with optional flags:
+
+  --forward-agent          Enable SSH agent forwarding (useful for bastion hosts)
+  --attempts N             Number of connection attempts before giving up (default 3)
+  --alive-interval N       Seconds between keepalive packets (default 10)
+  --alive-count N          Max unanswered keepalives before disconnect (default 60)
+
+Example:
+  sshtie add
+  sshtie add --forward-agent --attempts=5`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		prog := tea.NewProgram(newAddWizard(), tea.WithAltScreen())
 		final, err := prog.Run()
@@ -286,6 +298,11 @@ var addCmd = &cobra.Command{
 			key = ""
 		}
 
+		forwardAgent, _ := cmd.Flags().GetBool("forward-agent")
+		attempts, _     := cmd.Flags().GetInt("attempts")
+		aliveInterval, _ := cmd.Flags().GetInt("alive-interval")
+		aliveCount, _    := cmd.Flags().GetInt("alive-count")
+
 		p := profile.Profile{
 			Name:        wiz.values[0],
 			Host:        wiz.values[1],
@@ -294,6 +311,11 @@ var addCmd = &cobra.Command{
 			Key:         key,
 			TmuxSession: wiz.values[5],
 			Network:     wiz.values[6],
+
+			ForwardAgent:        forwardAgent,
+			ConnectionAttempts:  attempts,
+			ServerAliveInterval: aliveInterval,
+			ServerAliveCountMax: aliveCount,
 		}
 
 		if err := profile.Add(p); err != nil {
@@ -301,7 +323,26 @@ var addCmd = &cobra.Command{
 		}
 
 		fmt.Printf("✅ Profile '%s' saved!\n", p.Name)
+		if forwardAgent {
+			fmt.Println("   ForwardAgent: enabled")
+		}
+		if attempts > 0 {
+			fmt.Printf("   ConnectionAttempts: %d\n", attempts)
+		}
+		if aliveInterval > 0 {
+			fmt.Printf("   ServerAliveInterval: %ds\n", aliveInterval)
+		}
+		if aliveCount > 0 {
+			fmt.Printf("   ServerAliveCountMax: %d\n", aliveCount)
+		}
 		fmt.Printf("→ Try: sshtie connect %s\n", p.Name)
 		return nil
 	},
+}
+
+func init() {
+	addCmd.Flags().Bool("forward-agent", false, "Enable SSH agent forwarding")
+	addCmd.Flags().Int("attempts", 0, "ConnectionAttempts (default 3)")
+	addCmd.Flags().Int("alive-interval", 0, "ServerAliveInterval in seconds (default 10)")
+	addCmd.Flags().Int("alive-count", 0, "ServerAliveCountMax (default 60)")
 }
