@@ -29,5 +29,8 @@ dist/
 project-overview/
 .specstory/
 
+# Claude project instructions (local only)
+CLAUDE.md
+
 # Output log (internal use)
 output.txt
