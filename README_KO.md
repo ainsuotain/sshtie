@@ -328,14 +328,18 @@ sudo mv sshtie /usr/local/bin/
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-apple-silicon.tar.gz | tar -xz
+xattr -c sshtie          # macOS 격리 플래그 해제
 sudo mv sshtie /usr/local/bin/
 ```
 
 **macOS — Intel**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-intel.tar.gz | tar -xz
+xattr -c sshtie          # macOS 격리 플래그 해제
 sudo mv sshtie /usr/local/bin/
 ```
+
+> **macOS 보안 경고가 뜨는 경우:** *"개발자를 확인할 수 없어 열 수 없습니다"* 라는 메시지가 뜨면, 같은 폴더에서 `xattr -c sshtie`를 실행한 뒤 이동하세요. Homebrew로 설치하면 이 과정이 자동으로 처리됩니다.
 
 **Windows**
 [Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-windows-amd64.zip` 다운로드 후 PATH에 추가.

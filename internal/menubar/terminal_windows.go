@@ -7,15 +7,36 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 // OpenConnect opens a terminal and runs "sshtie connect <name>".
 // Prefers WSL (gets mosh support) over native Windows terminal.
+//
+// For native Windows: sshtie.exe is spawned directly in its own console window
+// (no CMD wrapper). SSHTIE_KEEP_WINDOW=1 tells sshtie to hide the window rather
+// than exit when the user clicks X, keeping the SSH session alive in background.
 func OpenConnect(profileName string) {
 	if openWSL("connect " + profileName) {
 		return
 	}
-	_ = openWindowsTerminal(fmt.Sprintf("%s connect %s", resolveBin(), profileName))
+	_ = openWindowsConnect(profileName)
+}
+
+// openWindowsConnect spawns sshtie.exe directly in a new console window.
+// Compared with the CMD-wrapper approach this:
+//   - eliminates the blank black window flash at startup
+//   - enables the window-hide-on-close behaviour via SSHTIE_KEEP_WINDOW
+func openWindowsConnect(profileName string) error {
+	bin := resolveBin()
+	cmd := exec.Command(bin, "connect", profileName)
+	cmd.Env = append(os.Environ(), "SSHTIE_KEEP_WINDOW=1")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: windows.CREATE_NEW_CONSOLE,
+	}
+	return cmd.Start()
 }
 
 // OpenAdd opens a terminal and runs "sshtie add".
@@ -60,7 +81,11 @@ func openWSL(sshtieArgs string) bool {
 		return false // WSL not installed
 	}
 	// Check that sshtie is available inside WSL.
-	if err := exec.Command("wsl.exe", "which", "sshtie").Run(); err != nil {
+	// HideWindow suppresses the brief black console flash that appears when a
+	// GUI-only process (the tray) spawns a console application (wsl.exe).
+	check := exec.Command("wsl.exe", "which", "sshtie")
+	check.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if err := check.Run(); err != nil {
 		return false // sshtie not found in WSL PATH
 	}
 

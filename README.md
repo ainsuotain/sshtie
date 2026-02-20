@@ -330,14 +330,18 @@ sudo mv sshtie /usr/local/bin/
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-apple-silicon.tar.gz | tar -xz
+xattr -c sshtie          # clear macOS quarantine flag
 sudo mv sshtie /usr/local/bin/
 ```
 
 **macOS — Intel**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-intel.tar.gz | tar -xz
+xattr -c sshtie          # clear macOS quarantine flag
 sudo mv sshtie /usr/local/bin/
 ```
+
+> **macOS security note:** If you see *"cannot be opened because the developer cannot be verified"*, run `xattr -c sshtie` in the same directory before moving it to `/usr/local/bin/`. This clears the quarantine flag that macOS attaches to downloaded files. Homebrew install (`brew install sshtie`) handles this automatically.
 
 **Windows**
 Download `sshtie-windows-amd64.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases) and add to PATH.

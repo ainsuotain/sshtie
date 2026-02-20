@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/spf13/cobra"
@@ -30,6 +31,13 @@ func runConnect(p profile.Profile) error {
 	port := p.Port
 	if port == 0 {
 		port = 22
+	}
+
+	// When launched from the Windows tray app (SSHTIE_KEEP_WINDOW=1), install
+	// a console close-event handler that hides the window instead of exiting.
+	// This keeps the SSH session alive in the background after the user clicks X.
+	if os.Getenv("SSHTIE_KEEP_WINDOW") == "1" {
+		connector.InstallWindowHideHandler()
 	}
 
 	result, err := tui.RunConnect(p, !isKnownHost(p.Host, port))
