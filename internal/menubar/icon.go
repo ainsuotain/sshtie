@@ -7,14 +7,23 @@ import (
 	"image/png"
 )
 
-// generatePNG returns a 22×22 PNG with a ">" chevron glyph.
-// Black on transparent — macOS inverts for Dark Mode automatically.
+// generatePNG returns a 22×22 PNG with a ">" chevron in black.
+// Used for light mode and macOS template icons (macOS inverts automatically).
 func generatePNG() []byte {
+	return chevronPNG(color.RGBA{R: 0, G: 0, B: 0, A: 255})
+}
+
+// generateLightPNG returns a 22×22 PNG with a ">" chevron in warm ivory.
+// Used for dark mode on platforms that don't auto-invert (Windows).
+func generateLightPNG() []byte {
+	return chevronPNG(color.RGBA{R: 240, G: 238, B: 230, A: 255})
+}
+
+func chevronPNG(c color.RGBA) []byte {
 	const size = 22
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
-	black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
-	drawLine(img, 4, 4, 16, 11, black)
-	drawLine(img, 16, 11, 4, 18, black)
+	drawLine(img, 4, 4, 16, 11, c)
+	drawLine(img, 16, 11, 4, 18, c)
 	var buf bytes.Buffer
 	_ = png.Encode(&buf, img)
 	return buf.Bytes()

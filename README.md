@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#)
 [![Release](https://img.shields.io/github/v/release/ainsuotain/sshtie)](https://github.com/ainsuotain/sshtie/releases)
 
-> **Connect once. Stay connected. Auto-fallback, auto-tmux, Tailscale-aware.**
+> **Connect once. Stay connected. Auto-reconnect, auto-tmux, Tailscale-aware.**
 
 한국어 문서: [README_KO.md](README_KO.md)
 
@@ -26,6 +26,7 @@
 | Want to monitor servers at a glance | Menu-bar app with 🟢/🔴 live status |
 | Need to tune keepalive or agent forwarding | Per-profile SSH options with slider UI |
 | Want Cursor / VS Code to see my servers | Auto-syncs to `~/.ssh/config` on add/remove |
+| Close laptop lid → session drops | SSH+tmux sessions **auto-reconnect** when network returns |
 
 ---
 
@@ -124,6 +125,27 @@ Auto-selects the best strategy:
 
 ---
 
+## Auto-Reconnect
+
+When using `ssh + tmux`, sshtie **automatically reconnects** if your connection drops (laptop lid, WiFi switch, VPN change):
+
+```
+→ Connecting to homeserver (alice@192.168.1.100)…
+[… working …]
+[network drops]
+
+⚠  Connection to 'homeserver' dropped.
+   Waiting for network to come back (Ctrl+C to cancel)......... ✓
+→ Reconnecting... (attempt 1/10)
+[tmux session resumes right where you left off]
+```
+
+- Polls every 3 s until the server is reachable again
+- Up to **10 reconnect attempts** — Ctrl+C to cancel any time
+- If using **mosh**, reconnect is handled by mosh itself (even more resilient)
+
+---
+
 ## Commands
 
 | Command | Description |
@@ -133,11 +155,35 @@ Auto-selects the best strategy:
 | `sshtie connect <name>` | Connect to a profile |
 | `sshtie <name>` | Shorthand for connect |
 | `sshtie edit <name>` | Edit advanced SSH options (slider UI) |
+| `sshtie copy <src> <dst>` | Duplicate a profile with a new name |
 | `sshtie list` | List all profiles |
 | `sshtie doctor <name>` | Diagnose connection (6 checks) |
 | `sshtie install <name>` | Install mosh + tmux on remote server |
+| `sshtie rename <name>` | Rename a profile |
 | `sshtie remove <name>` | Remove a profile |
 | `sshtie ssh-config` | Manually sync all profiles to `~/.ssh/config` |
+
+---
+
+## Interactive TUI
+
+Run `sshtie` with no arguments to open the profile picker:
+
+```
+  sshtie  SSH + mosh + tmux, unified
+
+▶ homeserver          alice@192.168.1.100:22   [auto]
+  workserver          david@work.example.com:2222  [tailscale]
+
+  ↑/↓  k/j  navigate  •  enter  connect  •  d  doctor  •  e  edit  •  q  quit
+```
+
+| Key | Action |
+|---|---|
+| `enter` | Connect to selected profile |
+| `e` | Open edit UI for selected profile |
+| `d` | Run doctor on selected profile |
+| `q` / `Esc` | Quit |
 
 ---
 
@@ -188,9 +234,26 @@ $ sshtie edit homeserver
     Forward agent         ○ on  ● off
 
   Effective max silence: 600s (10m 00s)
+
+  ─── Profile ──────────────────────────────────────────────
+    Rename                homeserver
+    Delete profile
 ```
 
-Controls: `↑/↓` select · `←/→` adjust · `shift+←/→` jump · `enter` save
+Controls: `↑/↓` select · `←/→` adjust · `shift+←/→` jump · `enter` save · `esc` cancel
+
+---
+
+## sshtie copy
+
+Duplicate an existing profile with a new name:
+
+```bash
+sshtie copy homeserver homeserver-backup
+sshtie cp   workserver workserver-dev
+```
+
+All settings are copied (host, user, port, SSH options). Edit the new profile with `sshtie edit <name>`.
 
 ---
 
@@ -208,6 +271,9 @@ A lightweight status app in your menu bar (macOS) or system tray (Windows).
     Forward agent: off  ← click toggles on/off (saved instantly)
     Edit SSH Options…   ← opens terminal with slider TUI
     ──────────
+    Rename…
+    Remove Profile
+    ──────────
     Disconnect          ← shown only when connected
 ```
 
@@ -218,6 +284,7 @@ A lightweight status app in your menu bar (macOS) or system tray (Windows).
 **Features:**
 - TCP status refresh every 60s, session status every 5s
 - **Open at Login** toggle (macOS: LaunchAgent / Windows: Registry)
+- **Dark Mode aware** — icon automatically uses the correct color for light/dark mode
 - **Windows:** auto-detects WSL — opens WSL terminal for mosh support
 
 ### Build
@@ -343,7 +410,9 @@ sshtie/
 ├── cmd/
 │   ├── add.go                # TUI wizard + optional SSH flags
 │   ├── connect.go
+│   ├── copy.go               # duplicate a profile
 │   ├── edit.go               # slider TUI for SSH options
+│   ├── rename.go
 │   ├── ssh_config.go         # ~/.ssh/config sync
 │   ├── doctor.go
 │   ├── install.go
@@ -351,11 +420,11 @@ sshtie/
 │   └── remove.go
 └── internal/
     ├── profile/              # YAML profiles (~/.sshtie/profiles.yaml)
-    ├── connector/            # mosh/ssh/tmux strategy + session write
+    ├── connector/            # mosh/ssh/tmux strategy + auto-reconnect
     ├── session/              # PID lock files (~/.sshtie/sessions/*.json)
     ├── checker/              # background TCP + session polling
-    ├── menubar/              # systray app (darwin/windows)
-    ├── tui/                  # Bubble Tea UIs (connect, doctor, edit)
+    ├── menubar/              # systray app (darwin/windows) + dark mode icon
+    ├── tui/                  # Bubble Tea UIs (connect, doctor, edit, list)
     ├── doctor/               # diagnostics logic
     └── tailscale/            # Tailscale detection
 ```
@@ -388,9 +457,16 @@ sshtie/
 - [x] Auto-sync `~/.ssh/config` on add/remove (Cursor/VS Code integration)
 - [x] Unit tests
 
-### v0.6 — Next
+### v0.6 — Resilience + Workflow ✅
+- [x] **Auto-reconnect** — ssh+tmux sessions reconnect when network returns
+- [x] `sshtie copy` — duplicate a profile with a new name
+- [x] Main TUI `e` key — edit selected profile directly
+- [x] Dark mode icon — correct color on macOS and Windows
+- [x] TUI profile list: shows `user@host:port [network]` (no duplicate host)
+
+### v0.7 — Next
 - [ ] `sshtie jump` — SSH jump host / bastion support
-- [ ] Auto-reconnect for dropped sessions
+- [ ] Main TUI `a` key — open add wizard directly from profile list
 
 ---
 

@@ -30,7 +30,7 @@ func Run() {
 
 func onReady() {
 	icon := iconBytes()
-	systray.SetTemplateIcon(icon, icon)
+	systray.SetIcon(icon)
 	systray.SetTooltip("sshtie — SSH profile manager")
 
 	chk := checker.New()

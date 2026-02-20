@@ -77,14 +77,82 @@ func Connect(p profile.Profile) error {
 	return connectSSH(p, port, session)
 }
 
-// connectSSH tries ssh+tmux then falls back to plain ssh.
+// connectSSH tries ssh+tmux, falls back to ssh, and auto-reconnects on drops.
+// A connection that ran for less than shortConn is considered a startup failure
+// (e.g. tmux not installed) rather than a network drop — those are NOT retried.
 func connectSSH(p profile.Profile, port int, session string) error {
-	if err := trySSHTmux(p, port, session); err == nil {
-		return nil
-	} else {
-		fmt.Fprintf(os.Stderr, "⚠  ssh+tmux failed (%v) — falling back to a plain SSH session.\n", err)
+	const shortConn = 2 * time.Second
+
+	// ── First attempt: ssh+tmux ────────────────────────────────────────────────
+	start := time.Now()
+	err := trySSHTmux(p, port, session)
+	dur := time.Since(start)
+	if err == nil {
+		return nil // clean exit (user quit tmux)
 	}
-	return trySSH(p, port)
+
+	if dur >= shortConn {
+		// Ran a while then dropped → reconnect with ssh+tmux.
+		return doReconnect(p, port, session, true)
+	}
+
+	// ssh+tmux exited immediately → tmux likely not installed; fall back to ssh.
+	fmt.Fprintf(os.Stderr, "⚠  ssh+tmux failed (%v) — falling back to a plain SSH session.\n", err)
+	start = time.Now()
+	err = trySSH(p, port)
+	dur = time.Since(start)
+	if err == nil {
+		return nil
+	}
+	if dur < shortConn {
+		return err // never really connected — don't retry
+	}
+	// Plain SSH ran then dropped → reconnect with ssh-only.
+	return doReconnect(p, port, session, false)
+}
+
+// doReconnect waits for the network and re-establishes the SSH connection.
+func doReconnect(p profile.Profile, port int, session string, useTmux bool) error {
+	const (
+		maxRetries = 10
+		shortConn  = 2 * time.Second
+	)
+
+	fmt.Fprintf(os.Stderr, "\n⚠  Connection to '%s' dropped.\n", p.Name)
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Fprint(os.Stderr, "   Waiting for network to come back (Ctrl+C to cancel).")
+		waitForNetwork(p.Host, port)
+		fmt.Fprintf(os.Stderr, "→ Reconnecting... (attempt %d/%d)\n", attempt, maxRetries)
+
+		start := time.Now()
+		var err error
+		if useTmux {
+			err = trySSHTmux(p, port, session)
+		} else {
+			err = trySSH(p, port)
+		}
+		dur := time.Since(start)
+
+		if err == nil {
+			return nil // clean exit after reconnect
+		}
+		if dur < shortConn {
+			// Reconnect attempt failed immediately — not a network issue.
+			return fmt.Errorf("reconnect failed: %w", err)
+		}
+		// Ran a while and dropped again — loop.
+		fmt.Fprintf(os.Stderr, "\n⚠  Connection dropped again.\n")
+	}
+	return fmt.Errorf("gave up reconnecting to %q after %d attempts", p.Name, maxRetries)
+}
+
+// waitForNetwork polls TCP until the server is reachable again.
+func waitForNetwork(host string, port int) {
+	for !tcpReachable(host, port, 5*time.Second) {
+		fmt.Fprint(os.Stderr, ".")
+		time.Sleep(3 * time.Second)
+	}
+	fmt.Fprintln(os.Stderr, " ✓")
 }
 
 // tryMosh launches mosh → tmux attach/new.
