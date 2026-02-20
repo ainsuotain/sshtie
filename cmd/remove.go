@@ -19,6 +19,7 @@ var removeCmd = &cobra.Command{
 			return err
 		}
 		fmt.Printf("✅ Profile '%s' removed.\n", name)
+		syncSSHConfig()
 		return nil
 	},
 }

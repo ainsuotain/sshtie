@@ -83,6 +83,39 @@ in their server picker automatically.`,
 	},
 }
 
+// syncSSHConfig writes all current profiles to ~/.ssh/config silently.
+// Called automatically after add / remove. Errors are printed but not fatal.
+func syncSSHConfig() {
+	profiles, err := profile.Load()
+	if err != nil {
+		return
+	}
+	path, err := sshConfigPath()
+	if err != nil {
+		return
+	}
+	existing := ""
+	if data, err := os.ReadFile(path); err == nil {
+		existing = string(data)
+	}
+	existing = stripBlock(existing)
+	var block strings.Builder
+	block.WriteString("\n" + sshtieBegin + "\n")
+	for _, p := range profiles {
+		block.WriteString(buildHostEntry(p))
+	}
+	block.WriteString(sshtieEnd + "\n")
+	output := strings.TrimRight(existing, "\n") + block.String()
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return
+	}
+	if err := os.WriteFile(path, []byte(output), 0600); err != nil {
+		fmt.Printf("⚠  Could not update ~/.ssh/config: %v\n", err)
+		return
+	}
+	fmt.Printf("✅ ~/.ssh/config updated (%d profile(s))\n", len(profiles))
+}
+
 // buildHostEntry generates an SSH config Host block for a profile.
 func buildHostEntry(p profile.Profile) string {
 	var sb strings.Builder

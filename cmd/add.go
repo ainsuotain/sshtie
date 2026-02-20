@@ -323,6 +323,7 @@ Example:
 		}
 
 		fmt.Printf("✅ Profile '%s' saved!\n", p.Name)
+		syncSSHConfig()
 		if forwardAgent {
 			fmt.Println("   ForwardAgent: enabled")
 		}
