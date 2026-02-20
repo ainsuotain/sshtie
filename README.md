@@ -23,9 +23,9 @@
 | Different settings per server | Unified YAML profiles |
 | No mosh/tmux on new server | Auto-detects and offers `sshtie install` |
 | On Tailscale network | Auto-detected and routed |
-| First-time SSH connection | Fingerprint warning before connecting |
 | Want to monitor servers at a glance | Menu-bar app with 🟢/🔴 live status |
 | Need to tune keepalive or agent forwarding | Per-profile SSH options with slider UI |
+| Want Cursor / VS Code to see my servers | Auto-syncs to `~/.ssh/config` on add/remove |
 
 ---
 
@@ -41,7 +41,9 @@
 | Windows + WSL | Mac/Linux | ✅ | ✅ | ✅ |
 | Any | Windows server | ✅ | ❌ | ❌ |
 
-> **Windows + WSL:** Install sshtie inside WSL (`linux-amd64` binary). The tray app auto-detects WSL and opens a WSL terminal — so mosh works too.
+> **SSH port:** Default is 22. If you don't know the port, just leave it blank — sshtie uses 22 automatically.
+
+> **Windows + WSL:** Install sshtie inside WSL (`linux-amd64` binary). The tray app auto-detects WSL and opens a WSL terminal for mosh support.
 
 ---
 
@@ -64,31 +66,29 @@
 
 ### Step 1 — Register your server
 
-`sshtie add` opens an interactive TUI wizard. Press Enter to advance, ESC to go back.
+```bash
+sshtie add
+```
+
+Interactive TUI wizard — only **name**, **host**, and **user** are required.
+Port defaults to 22. Press Enter to skip optional fields.
 
 ```
-$ sshtie add
-
-  sshtie add  New Profile        Step 1 / 7
-
   ▶ Profile name    homeserver█
-    A nickname for this connection (e.g., macmini, work-server)
   · Host            (required)
   · User            (required)
-  · Port            22
+  · Port            22            ← press Enter if unsure
   · SSH Key         ~/.ssh/id_ed25519
   · tmux session    main
   · Network mode    auto
-
-  enter  next  •  esc  back  •  ctrl+c  cancel
 ```
 
-Only **name**, **host**, and **user** are required. All others have sensible defaults.
+After saving, `~/.ssh/config` is **automatically updated** — Cursor and VS Code will see the new server immediately.
 
-**Advanced SSH options** can be set at creation time with flags:
+**Advanced SSH options** via flags:
 
 ```bash
-sshtie add --forward-agent            # enable SSH agent forwarding
+sshtie add --forward-agent            # SSH agent forwarding (for bastion hosts)
 sshtie add --attempts=5               # retry up to 5 times
 sshtie add --alive-interval=30        # keepalive every 30s
 sshtie add --alive-count=40           # drop after 40 missed pings (20 min)
@@ -105,7 +105,7 @@ sshtie install homeserver --tailscale # also install Tailscale
 
 Supports: `apt` · `dnf` · `yum` · `brew` · `pacman`. Works with password auth too.
 
-> **Tip:** `sshtie connect` auto-detects missing tools and offers to install them.
+> `sshtie connect` auto-detects missing tools and offers to install them.
 
 ---
 
@@ -119,21 +119,7 @@ sshtie homeserver          # shorthand
 Auto-selects the best strategy:
 
 ```
-  sshtie connect homeserver
-          │
-          ▼
-  ┌───────────────────┐
-  │  mosh available?  │
-  │  UDP 60001 open?  │
-  └────────┬──────────┘
-         Yes│                    No│
-            ▼                      ▼
-     mosh + tmux              ssh + tmux
-     attach/create            attach/create
-            │                      │
-        fail│                  fail│
-            ▼                      ▼
-     ssh + tmux               ssh only
+  mosh + tmux  →  ssh + tmux  →  ssh only
 ```
 
 ---
@@ -151,19 +137,50 @@ Auto-selects the best strategy:
 | `sshtie doctor <name>` | Diagnose connection (6 checks) |
 | `sshtie install <name>` | Install mosh + tmux on remote server |
 | `sshtie remove <name>` | Remove a profile |
+| `sshtie ssh-config` | Manually sync all profiles to `~/.ssh/config` |
+
+---
+
+## Cursor / VS Code Integration
+
+sshtie automatically keeps `~/.ssh/config` in sync whenever you add or remove a profile.
+
+```bash
+sshtie add
+# ✅ Profile 'homeserver' saved!
+# ✅ ~/.ssh/config updated (2 profiles)   ← automatic
+```
+
+After that, Cursor and VS Code Remote-SSH show the server in their picker without any extra steps.
+
+If you have existing profiles and want to sync manually once:
+
+```bash
+sshtie ssh-config
+```
+
+The managed entries are wrapped in a clearly marked block — your own SSH config entries are never touched:
+
+```
+# BEGIN sshtie managed — do not edit this block manually
+
+Host homeserver
+  HostName 192.168.1.100
+  User alice
+  ServerAliveInterval 10
+  ...
+
+# END sshtie managed
+```
 
 ---
 
 ## sshtie edit — Slider UI
 
-Adjust per-profile SSH options with an interactive slider TUI:
+Adjust per-profile SSH options interactively:
 
 ```
 $ sshtie edit homeserver
-
-  sshtie edit  homeserver
-
-  ↑/↓ select  ·  ←/→ adjust  ·  shift+←/→ jump  ·  enter save  ·  esc cancel
 
   ▶ Connection attempts   [━━━━░░░░░░░░░░░░░░░░]    3  (1–10)
     Alive interval        [━━━━━━━━░░░░░░░░░░░░]   10s (10–60s)
@@ -173,16 +190,18 @@ $ sshtie edit homeserver
   Effective max silence: 600s (10m 00s)
 ```
 
+Controls: `↑/↓` select · `←/→` adjust · `shift+←/→` jump · `enter` save
+
 ---
 
 ## macOS Menu-bar / Windows System Tray
 
-A lightweight status app lives in your menu bar (macOS) or system tray (Windows).
+A lightweight status app in your menu bar (macOS) or system tray (Windows).
 
 **Per-server sub-menu:**
 
 ```
-🟢● homeserver
+🟢  homeserver [connected]
     Connect
     ──────────
     Interval: 10s       ← click cycles 10s → 30s → 60s (saved instantly)
@@ -192,33 +211,21 @@ A lightweight status app lives in your menu bar (macOS) or system tray (Windows)
     Disconnect          ← shown only when connected
 ```
 
-**Status indicators:**
-- 🟢 — reachable
-- 🔴 — unreachable
-- 🟡 — checking
-- ● — currently connected (active session tracked by PID)
+**Status:**
+- 🟢 reachable · 🔴 unreachable · 🟡 checking
+- `[connected]` — active session tracked by PID
 
 **Features:**
-- Auto-refreshes TCP status every 60s, session status every 5s
-- **Open at Login** toggle (macOS: LaunchAgent, Windows: Registry)
-- Disconnect kills the connection process and cleans up the session file
+- TCP status refresh every 60s, session status every 5s
+- **Open at Login** toggle (macOS: LaunchAgent / Windows: Registry)
+- **Windows:** auto-detects WSL — opens WSL terminal for mosh support
 
-**Windows tray — WSL detection:**
-When "Connect" is clicked, the tray checks for WSL + sshtie-in-WSL automatically:
-1. WSL available + sshtie in WSL → opens WSL terminal (mosh supported ✅)
-2. Otherwise → opens native Windows terminal (SSH only)
-
-### Building the tray app
+### Build
 
 ```bash
-# macOS .app bundle
-make menubar
-
-# Run immediately
-make menubar-run
-
-# Windows tray (cross-compiled from Mac)
-make tray-windows   # → dist/sshtie-tray-windows-amd64.zip
+make menubar          # macOS .app bundle → dist/sshtie-menubar.app
+make menubar-run      # build + open immediately
+make tray-windows     # Windows tray → dist/sshtie-tray-windows-amd64.zip
 ```
 
 ---
@@ -229,14 +236,13 @@ make tray-windows   # → dist/sshtie-tray-windows-amd64.zip
 $ sshtie doctor homeserver
 
   SSH connection       ✅ OK
-  mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
+  mosh-server          ✅ Found
   UDP port 60001       ✅ Open
   tmux                 ✅ tmux 3.3a installed
   Tailscale (client)   ✅ Running
   Tailscale (server)   ✅ Found in Tailscale network
 
 → Recommended strategy: mosh + tmux
-→ Ready to connect!
 ```
 
 ---
@@ -251,6 +257,8 @@ cd ~
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-linux-amd64.tar.gz | tar -xz
 sudo mv sshtie /usr/local/bin/
 ```
+
+> **WSL tip:** Run `cd ~` first to move to your Linux home (`/home/<you>`) before running curl.
 
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
@@ -268,6 +276,9 @@ sudo mv sshtie /usr/local/bin/
 Download `sshtie-windows-amd64.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases) and add to PATH.
 For mosh support, also install the `linux-amd64` binary inside WSL.
 
+**Windows Tray App**
+Download `sshtie-tray-windows-amd64.zip`, extract both files to the same folder, run `sshtie-tray.exe`.
+
 ### macOS *(Homebrew)*
 ```bash
 brew tap ainsuotain/sshtie
@@ -281,8 +292,6 @@ cd sshtie
 go build -o sshtie .
 ```
 
-Requires Go 1.22+. Single static binary, no runtime dependencies.
-
 ---
 
 ## Profile Schema
@@ -294,18 +303,34 @@ profiles:
   - name: homeserver
     host: 192.168.1.100
     user: alice
-    port: 22
-    key: ~/.ssh/id_ed25519
+    port: 22                    # default: 22 — can be omitted
+    key: ~/.ssh/id_ed25519      # omit to use default key
     tmux_session: main
     mosh_server: /opt/homebrew/bin/mosh-server  # optional, auto-detected
-    network: auto                               # auto | tailscale | direct
+    network: auto               # auto | tailscale | direct
 
     # Advanced SSH options (omit to use defaults)
-    forward_agent: true          # SSH agent forwarding (default: false)
-    server_alive_interval: 10    # keepalive interval in seconds (default: 10)
-    server_alive_count_max: 60   # missed pings before disconnect (default: 60)
-    connection_attempts: 3       # retry attempts (default: 3)
+    forward_agent: true         # SSH agent forwarding (default: false)
+    server_alive_interval: 10   # keepalive interval in seconds (default: 10)
+    server_alive_count_max: 60  # missed pings before disconnect (default: 60)
+    connection_attempts: 3      # retry attempts (default: 3)
 ```
+
+---
+
+## Server Prerequisites
+
+**macOS server**
+- System Settings → General → Sharing → **Remote Login: ON**
+- `brew install mosh tmux` *(or use `sshtie install`)*
+
+**Linux server**
+- `sshd` must be running
+- `sudo apt install mosh tmux` *(or use `sshtie install`)*
+
+**Windows server**
+- Settings → Apps → Optional Features → **OpenSSH Server**
+- ⚠ mosh and tmux are not supported on Windows servers
 
 ---
 
@@ -317,10 +342,11 @@ sshtie/
 ├── menubar/main.go           # tray app entry point (darwin/windows)
 ├── cmd/
 │   ├── add.go                # TUI wizard + optional SSH flags
-│   ├── connect.go            # connection entry point
-│   ├── edit.go               # slider TUI for SSH advanced options
-│   ├── doctor.go             # diagnostics
-│   ├── install.go            # remote dependency installer
+│   ├── connect.go
+│   ├── edit.go               # slider TUI for SSH options
+│   ├── ssh_config.go         # ~/.ssh/config sync
+│   ├── doctor.go
+│   ├── install.go
 │   ├── list.go
 │   └── remove.go
 └── internal/
@@ -329,7 +355,7 @@ sshtie/
     ├── session/              # PID lock files (~/.sshtie/sessions/*.json)
     ├── checker/              # background TCP + session polling
     ├── menubar/              # systray app (darwin/windows)
-    ├── tui/                  # Bubble Tea: connect, doctor, edit UIs
+    ├── tui/                  # Bubble Tea UIs (connect, doctor, edit)
     ├── doctor/               # diagnostics logic
     └── tailscale/            # Tailscale detection
 ```
@@ -349,18 +375,18 @@ sshtie/
 - [x] Tailscale auto-detection, Homebrew tap, pre-built binaries
 
 ### v0.4 — Menu-bar App ✅
-- [x] macOS menu-bar + Windows system-tray (fyne.io/systray)
-- [x] Live 🟢/🔴 server status (TCP polling)
-- [x] Click to connect via terminal
-- [x] Open at Login (LaunchAgent / Registry)
+- [x] macOS menu-bar + Windows system-tray
+- [x] Live 🟢/🔴 server status, click to connect
+- [x] Open at Login
 
 ### v0.5 — Connection Management + SSH Options ✅
-- [x] Active session tracking (PID lock files per profile)
-- [x] ● active indicator + Disconnect in tray
-- [x] `sshtie edit` — per-profile slider UI for SSH advanced options
-- [x] Quick Interval / ForwardAgent toggle directly in tray
-- [x] WSL detection — tray auto-opens WSL terminal for mosh support
-- [x] Unit tests (session, profile, menubar)
+- [x] Active session tracking (PID lock files)
+- [x] `[connected]` indicator + Disconnect in tray
+- [x] `sshtie edit` slider UI for SSH options
+- [x] Quick Interval / ForwardAgent toggle in tray
+- [x] WSL auto-detection for mosh on Windows
+- [x] Auto-sync `~/.ssh/config` on add/remove (Cursor/VS Code integration)
+- [x] Unit tests
 
 ### v0.6 — Next
 - [ ] `sshtie jump` — SSH jump host / bastion support

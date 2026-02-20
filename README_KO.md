@@ -24,6 +24,7 @@ English docs: [README.md](README.md)
 | 새 서버에 mosh/tmux가 없다 | `sshtie install`로 자동 설치 |
 | 서버 상태를 한눈에 보고 싶다 | 메뉴바 앱으로 🟢/🔴 실시간 확인 |
 | keepalive나 에이전트 포워딩 조정 | 슬라이더 UI로 프로파일별 설정 |
+| Cursor / VS Code에서 서버를 보고 싶다 | add/remove 시 `~/.ssh/config` 자동 동기화 |
 
 ---
 
@@ -38,6 +39,8 @@ English docs: [README.md](README.md)
 | Windows (네이티브) | Mac/Linux | ✅ | ❌ | ✅ |
 | Windows + WSL | Mac/Linux | ✅ | ✅ | ✅ |
 | 모든 클라이언트 | Windows 서버 | ✅ | ❌ | ❌ |
+
+> **SSH 포트:** 기본은 22입니다. 포트를 모르면 그냥 Enter — sshtie가 22번을 자동으로 사용합니다.
 
 > **Windows + WSL:** WSL 안에 sshtie(`linux-amd64` 바이너리)를 설치하면 됩니다. 트레이 앱이 WSL을 자동으로 감지해서 mosh까지 지원하는 WSL 터미널로 열어줍니다.
 
@@ -82,6 +85,8 @@ $ sshtie add
 ```
 
 필수 항목은 **이름·호스트·유저** 3가지뿐. 나머지는 Enter로 기본값 사용.
+
+저장 후 `~/.ssh/config`가 **자동으로 업데이트**되어 Cursor와 VS Code에서 즉시 서버를 확인할 수 있습니다.
 
 **고급 SSH 옵션**은 생성 시 플래그로 설정 가능:
 
@@ -149,6 +154,41 @@ sshtie homeserver          # 단축 사용
 | `sshtie doctor <name>` | 연결 진단 (6가지 체크) |
 | `sshtie install <name>` | 원격 서버에 mosh + tmux 자동 설치 |
 | `sshtie remove <name>` | 프로파일 삭제 |
+| `sshtie ssh-config` | 전체 프로파일을 `~/.ssh/config`에 수동 동기화 |
+
+---
+
+## Cursor / VS Code 통합
+
+sshtie는 프로파일을 추가하거나 삭제할 때마다 `~/.ssh/config`를 자동으로 동기화합니다.
+
+```bash
+sshtie add
+# ✅ Profile 'homeserver' saved!
+# ✅ ~/.ssh/config updated (2 profiles)   ← 자동
+```
+
+이후 Cursor와 VS Code Remote-SSH의 서버 목록에 서버가 자동으로 표시됩니다.
+
+기존 프로파일을 한 번에 동기화하려면:
+
+```bash
+sshtie ssh-config
+```
+
+관리되는 항목은 명확한 블록으로 구분되며, 기존 SSH config 항목은 절대 건드리지 않습니다:
+
+```
+# BEGIN sshtie managed — do not edit this block manually
+
+Host homeserver
+  HostName 192.168.1.100
+  User alice
+  ServerAliveInterval 10
+  ...
+
+# END sshtie managed
+```
 
 ---
 
@@ -180,7 +220,7 @@ $ sshtie edit homeserver
 **서버별 서브메뉴:**
 
 ```
-🟢● homeserver
+🟢  homeserver [connected]
     Connect
     ──────────
     Interval: 10s       ← 클릭 시 10s → 30s → 60s 순환 (즉시 저장)
@@ -191,10 +231,8 @@ $ sshtie edit homeserver
 ```
 
 **상태 표시:**
-- 🟢 — 접속 가능
-- 🔴 — 접속 불가
-- 🟡 — 확인 중
-- ● — 현재 연결됨 (PID 기반 세션 추적)
+- 🟢 — 접속 가능 · 🔴 — 접속 불가 · 🟡 — 확인 중
+- `[connected]` — PID 기반 활성 세션 추적
 
 **주요 기능:**
 - TCP 상태 60초마다 자동 갱신, 세션 상태 5초마다 갱신
@@ -268,6 +306,9 @@ sudo mv sshtie /usr/local/bin/
 [Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-windows-amd64.zip` 다운로드 후 PATH에 추가.
 mosh 지원을 원하면 WSL 안에 `linux-amd64` 바이너리도 설치하세요.
 
+**Windows 트레이 앱**
+`sshtie-tray-windows-amd64.zip`을 다운로드하고, 두 파일을 같은 폴더에 압축 해제한 뒤 `sshtie-tray.exe`를 실행하세요.
+
 ### macOS *(Homebrew)*
 ```bash
 brew tap ainsuotain/sshtie
@@ -319,6 +360,7 @@ sshtie/
 │   ├── add.go                # TUI 위자드 + SSH 옵션 플래그
 │   ├── connect.go            # 연결 진입점
 │   ├── edit.go               # 슬라이더 TUI
+│   ├── ssh_config.go         # ~/.ssh/config 동기화
 │   ├── doctor.go             # 진단
 │   ├── install.go            # 원격 의존성 설치
 │   ├── list.go
@@ -356,10 +398,11 @@ sshtie/
 
 ### v0.5 — 연결 관리 + SSH 옵션 ✅
 - [x] 활성 세션 추적 (PID 락 파일)
-- [x] ● 활성 표시 + 트레이에서 Disconnect
+- [x] `[connected]` 표시 + 트레이에서 Disconnect
 - [x] `sshtie edit` 슬라이더 UI
 - [x] 트레이에서 Interval / ForwardAgent 빠른 조정
 - [x] WSL 자동 감지 (트레이 → WSL 터미널 → mosh 지원)
+- [x] `~/.ssh/config` 자동 동기화 (Cursor/VS Code 통합)
 - [x] 단위 테스트 (session, profile, menubar)
 
 ### v0.6 — 다음
