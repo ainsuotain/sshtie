@@ -77,7 +77,7 @@ tray-windows:
 	@echo "Building sshtie-tray.exe (windows/amd64)..."
 	@mkdir -p $(DIST)
 	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
-	    go build -ldflags "$(LDFLAGS)" \
+	    go build -ldflags "$(LDFLAGS) -H windowsgui" \
 	    -o $(DIST)/sshtie-tray.exe ./menubar/
 	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 \
 	    go build -ldflags "$(LDFLAGS)" \
