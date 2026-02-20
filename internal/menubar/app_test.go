@@ -53,9 +53,9 @@ func TestFaLabel(t *testing.T) {
 }
 
 func TestMenuLabel(t *testing.T) {
-	// active + reachable → green + bullet
+	// active + reachable → green + [connected]
 	got := menuLabel("srv", true, true, true)
-	if got != "🟢  ● srv" {
+	if got != "🟢  srv [connected]" {
 		t.Errorf("menuLabel active reachable: %q", got)
 	}
 	// inactive + unreachable → red

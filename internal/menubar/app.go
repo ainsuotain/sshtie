@@ -297,7 +297,7 @@ func killSession(s session.Session) {
 func menuLabel(name string, reachable, known, active bool) string {
 	prefix := statusDot(reachable, known)
 	if active {
-		return prefix + "● " + name
+		return prefix + name + " [connected]"
 	}
 	return prefix + name
 }
