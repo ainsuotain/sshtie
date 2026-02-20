@@ -22,7 +22,7 @@ English docs: [README.md](README.md)
 | tmux 매번 수동 attach | 접속 시 자동 attach/create |
 | 서버마다 설정이 달라 헷갈림 | YAML 프로파일로 통합 관리 |
 | 새 서버에 mosh/tmux가 없다 | `sshtie install`로 자동 설치 |
-| 서버 상태를 한눈에 보고 싶다 | 메뉴바 앱으로 🟢/🔴 실시간 확인 |
+| 서버 상태를 한눈에 보고 싶다 | 메뉴바 앱으로 🟢/🔴 실시간 확인( ● on WIN) |
 | keepalive나 에이전트 포워딩 조정 | 슬라이더 UI로 프로파일별 설정 |
 | Cursor / VS Code에서 서버를 보고 싶다 | add/remove 시 `~/.ssh/config` 자동 동기화 |
 | 노트북 덮었다 열면 세션이 끊김 | ssh+tmux 세션 **자동 재연결** (네트워크 복구 시) |
