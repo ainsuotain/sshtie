@@ -70,6 +70,7 @@ func init() {
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(editCmd)
+	rootCmd.AddCommand(renameCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(doctorCmd)
 	rootCmd.AddCommand(removeCmd)

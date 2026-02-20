@@ -25,6 +25,16 @@ func OpenEdit(profileName string) {
 	_ = openTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
 }
 
+// OpenRename opens a terminal window and runs "sshtie rename <name>".
+func OpenRename(profileName string) {
+	_ = openTerminal(fmt.Sprintf("%s rename %s", resolveBin(), profileName))
+}
+
+// OpenRemove opens a terminal window and runs "sshtie remove <name>".
+func OpenRemove(profileName string) {
+	_ = openTerminal(fmt.Sprintf("%s remove %s", resolveBin(), profileName))
+}
+
 // openTerminal tries iTerm2 first, then falls back to Terminal.app.
 func openTerminal(shellCmd string) error {
 	if isRunning("iTerm2") {

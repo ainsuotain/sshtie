@@ -24,9 +24,18 @@ var (
 	editSaved    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("72"))
 	editErr      = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 	editHint     = lipgloss.NewStyle().Foreground(lipgloss.Color("246"))
+	editWarn     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("208"))
 )
 
 const barWidth = 20
+
+// Row indices: 0-3 = sliders/toggles, 4 = rename, 5 = delete.
+const (
+	numSliderOpts = 4
+	optRename     = 4
+	optDelete     = 5
+	numOpts       = 6
+)
 
 // ── Option definitions ────────────────────────────────────────────────────────
 
@@ -71,7 +80,6 @@ func defaultOpts(p profile.Profile) []editOpt {
 			label: "Alive count max",
 			min: 6, max: 120, value: aliveCount,
 			extra: func(v int) string {
-				// effective silence = interval × count, but we don't know interval here
 				return fmt.Sprintf("drop after %d missed pings", v)
 			},
 		},
@@ -90,20 +98,25 @@ func defaultOpts(p profile.Profile) []editOpt {
 
 // EditResult is returned from RunEdit.
 type EditResult struct {
-	Saved           bool
-	ForwardAgent    bool
+	Saved               bool
+	Deleted             bool   // true → caller should call profile.Remove()
+	NewName             string // non-empty and differs from old → rename
+	ForwardAgent        bool
 	ServerAliveInterval int
 	ServerAliveCountMax int
 	ConnectionAttempts  int
 }
 
 type editModel struct {
-	profileName string
-	cursor      int
-	opts        []editOpt
-	done        bool
-	aborted     bool
-	errMsg      string
+	profileName   string
+	cursor        int
+	opts          []editOpt
+	newName       string // rename text buffer
+	deleteConfirm bool   // first Enter on delete row = show warning
+	isDeleted     bool   // second Enter on delete row = confirmed
+	done          bool
+	aborted       bool
+	errMsg        string
 }
 
 func newEditModel(p profile.Profile) editModel {
@@ -121,8 +134,6 @@ func (m editModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	opt := &m.opts[m.cursor]
-
 	switch key.String() {
 	case "ctrl+c", "q":
 		m.aborted = true
@@ -133,39 +144,76 @@ func (m editModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case "enter":
-		m.done = true
-		return m, tea.Quit
+		switch m.cursor {
+		case optDelete:
+			if m.deleteConfirm {
+				m.isDeleted = true
+				m.done = true
+				return m, tea.Quit
+			}
+			m.deleteConfirm = true
+		default:
+			m.done = true
+			return m, tea.Quit
+		}
 
 	case "up", "k":
 		if m.cursor > 0 {
 			m.cursor--
+			m.deleteConfirm = false
 		}
 
 	case "down", "j":
-		if m.cursor < len(m.opts)-1 {
+		if m.cursor < numOpts-1 {
 			m.cursor++
+			m.deleteConfirm = false
 		}
 
 	case "left", "h":
-		if opt.value > opt.min {
-			opt.value--
+		if m.cursor < numSliderOpts {
+			opt := &m.opts[m.cursor]
+			if opt.value > opt.min {
+				opt.value--
+			}
 		}
 
 	case "right", "l":
-		if opt.value < opt.max {
-			opt.value++
+		if m.cursor < numSliderOpts {
+			opt := &m.opts[m.cursor]
+			if opt.value < opt.max {
+				opt.value++
+			}
 		}
 
-	// Fine-grained: shift+arrow = jump by larger step
 	case "shift+left":
-		step := largeStep(opt)
-		opt.value -= step
-		if opt.value < opt.min { opt.value = opt.min }
+		if m.cursor < numSliderOpts {
+			opt := &m.opts[m.cursor]
+			step := largeStep(opt)
+			opt.value -= step
+			if opt.value < opt.min { opt.value = opt.min }
+		}
 
 	case "shift+right":
-		step := largeStep(opt)
-		opt.value += step
-		if opt.value > opt.max { opt.value = opt.max }
+		if m.cursor < numSliderOpts {
+			opt := &m.opts[m.cursor]
+			step := largeStep(opt)
+			opt.value += step
+			if opt.value > opt.max { opt.value = opt.max }
+		}
+
+	case "backspace":
+		if m.cursor == optRename && len(m.newName) > 0 {
+			runes := []rune(m.newName)
+			m.newName = string(runes[:len(runes)-1])
+		}
+
+	default:
+		if m.cursor == optRename {
+			runes := []rune(key.String())
+			if len(runes) == 1 && runes[0] >= 32 {
+				m.newName += string(runes)
+			}
+		}
 	}
 
 	return m, nil
@@ -183,19 +231,24 @@ func (m editModel) View() string {
 
 	sb.WriteString(editTitle.Render("sshtie edit") + "  ")
 	sb.WriteString(editSub.Render(m.profileName) + "\n\n")
-	sb.WriteString(editHint.Render("  ↑/↓  select  ·  ←/→  adjust  ·  shift+←/→  jump  ·  enter  save  ·  esc  cancel") + "\n\n")
 
+	// Controls hint — changes when on rename row
+	if m.cursor == optRename {
+		sb.WriteString(editHint.Render("  type new name  ·  backspace  delete char  ·  enter  save  ·  esc  cancel") + "\n\n")
+	} else {
+		sb.WriteString(editHint.Render("  ↑/↓  select  ·  ←/→  adjust  ·  shift+←/→  jump  ·  enter  save  ·  esc  cancel") + "\n\n")
+	}
+
+	// ── Slider / toggle rows (0-3) ──
 	for i, opt := range m.opts {
 		active := i == m.cursor
 
-		// Row prefix
 		if active {
 			sb.WriteString(editActive.Render("  ▶ "))
 		} else {
 			sb.WriteString(editInactive.Render("    "))
 		}
 
-		// Label (fixed width)
 		label := fmt.Sprintf("%-22s", opt.label)
 		if active {
 			sb.WriteString(editActive.Render(label))
@@ -204,7 +257,6 @@ func (m editModel) View() string {
 		}
 
 		if opt.isBool {
-			// Toggle display
 			if opt.value == 1 {
 				sb.WriteString(editBar.Render("● on "))
 				sb.WriteString(editBarEmpty.Render("○ off"))
@@ -213,20 +265,16 @@ func (m editModel) View() string {
 				sb.WriteString(editBar.Render("● off"))
 			}
 		} else {
-			// Slider bar
 			filled := int(float64(opt.value-opt.min) / float64(opt.max-opt.min) * float64(barWidth))
 			sb.WriteString(editBar.Render(strings.Repeat("━", filled)))
 			sb.WriteString(editBarEmpty.Render(strings.Repeat("░", barWidth-filled)))
 
-			// Value label
 			valStr := fmt.Sprintf("  %3d%s", opt.value, opt.unit)
 			sb.WriteString(editVal.Render(valStr))
 
-			// Range hint
 			sb.WriteString(editMeta.Render(fmt.Sprintf("  (%d–%d)", opt.min, opt.max)))
 		}
 
-		// Right-side annotation
 		if opt.extra != nil {
 			sb.WriteString(editMeta.Render("  · " + opt.extra(opt.value)))
 		}
@@ -234,12 +282,8 @@ func (m editModel) View() string {
 		sb.WriteString("\n")
 	}
 
+	// Summary line for SSH timing
 	sb.WriteString("\n")
-	if m.errMsg != "" {
-		sb.WriteString(editErr.Render("  ✗ "+m.errMsg) + "\n")
-	}
-
-	// Summary line
 	aliveInterval := m.opts[1].value
 	aliveCount    := m.opts[2].value
 	silenceSec    := aliveInterval * aliveCount
@@ -247,6 +291,53 @@ func (m editModel) View() string {
 		"  Effective max silence: %ds (%dm %02ds)\n",
 		silenceSec, silenceSec/60, silenceSec%60,
 	)))
+
+	// ── Profile management section ──
+	sb.WriteString("\n")
+	sb.WriteString(editMeta.Render("  ─── Profile ────────────────────────────────────────────") + "\n")
+
+	// Row 4: Rename
+	if m.cursor == optRename {
+		sb.WriteString(editActive.Render("  ▶ "))
+		sb.WriteString(editActive.Render(fmt.Sprintf("%-22s", "Rename")))
+		if m.newName == "" {
+			sb.WriteString(editMeta.Render(m.profileName))
+			sb.WriteString(editActive.Render("█"))
+			sb.WriteString(editMeta.Render("  (type to rename, empty = keep current)"))
+		} else {
+			sb.WriteString(editVal.Render(m.newName + "█"))
+		}
+	} else {
+		sb.WriteString(editInactive.Render("    "))
+		sb.WriteString(editInactive.Render(fmt.Sprintf("%-22s", "Rename")))
+		if m.newName != "" {
+			sb.WriteString(editVal.Render(m.newName))
+			sb.WriteString(editMeta.Render(fmt.Sprintf("  (was: %s)", m.profileName)))
+		} else {
+			sb.WriteString(editMeta.Render(m.profileName))
+		}
+	}
+	sb.WriteString("\n")
+
+	// Row 5: Delete
+	if m.cursor == optDelete {
+		sb.WriteString(editActive.Render("  ▶ "))
+		sb.WriteString(editActive.Render(fmt.Sprintf("%-22s", "Delete profile")))
+		if m.deleteConfirm {
+			sb.WriteString(editWarn.Render("⚠ press enter again to confirm"))
+		} else {
+			sb.WriteString(editMeta.Render("press enter to delete"))
+		}
+	} else {
+		sb.WriteString(editInactive.Render("    "))
+		sb.WriteString(editInactive.Render(fmt.Sprintf("%-22s", "Delete profile")))
+	}
+	sb.WriteString("\n")
+
+	if m.errMsg != "" {
+		sb.WriteString("\n")
+		sb.WriteString(editErr.Render("  ✗ "+m.errMsg) + "\n")
+	}
 
 	return sb.String()
 }
@@ -266,8 +357,15 @@ func RunEdit(p profile.Profile) (EditResult, error) {
 		return EditResult{Saved: false}, nil
 	}
 
+	newName := strings.TrimSpace(m.newName)
+	if newName == m.profileName {
+		newName = "" // no actual rename
+	}
+
 	return EditResult{
 		Saved:               true,
+		Deleted:             m.isDeleted,
+		NewName:             newName,
 		ForwardAgent:        m.opts[3].value == 1,
 		ConnectionAttempts:  m.opts[0].value,
 		ServerAliveInterval: m.opts[1].value,
@@ -293,3 +391,6 @@ func SummaryLine(p profile.Profile) string {
 		attempts, aliveInterval, aliveCount, silenceSec/60, fa,
 	)
 }
+
+// suppress unused import warning for editSaved
+var _ = editSaved

@@ -34,6 +34,22 @@ func OpenEdit(profileName string) {
 	_ = openWindowsTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
 }
 
+// OpenRename opens a terminal and runs "sshtie rename <name>".
+func OpenRename(profileName string) {
+	if openWSL("rename " + profileName) {
+		return
+	}
+	_ = openWindowsTerminal(fmt.Sprintf("%s rename %s", resolveBin(), profileName))
+}
+
+// OpenRemove opens a terminal and runs "sshtie remove <name>".
+func OpenRemove(profileName string) {
+	if openWSL("remove " + profileName) {
+		return
+	}
+	_ = openWindowsTerminal(fmt.Sprintf("%s remove %s", resolveBin(), profileName))
+}
+
 // ── WSL support ───────────────────────────────────────────────────────────────
 
 // openWSL tries to open a WSL terminal running "sshtie <args>".

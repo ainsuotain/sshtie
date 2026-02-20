@@ -184,10 +184,15 @@ func addProfileMenu(p profile.Profile, chk *checker.Checker, trigger func(), sto
 	faItem        := item.AddSubMenuItem(faLabel(p), "Toggle SSH agent forwarding")
 	editItem      := item.AddSubMenuItem("Edit SSH Options…", "Open slider UI to adjust all options")
 
+	sep2 := item.AddSubMenuItem("──────────", "")
+	sep2.Disable()
+	renameItem := item.AddSubMenuItem("Rename…", "Rename this profile")
+	removeItem := item.AddSubMenuItem("Remove Profile", "Delete this profile permanently")
+
 	var disconnectCh <-chan struct{}
 	if isActive {
-		sep2 := item.AddSubMenuItem("──────────", "")
-		sep2.Disable()
+		sep3 := item.AddSubMenuItem("──────────", "")
+		sep3.Disable()
 		disconnectCh = item.AddSubMenuItem("Disconnect", "Terminate this connection").ClickedCh
 	} else {
 		disconnectCh = make(chan struct{}) // never fires
@@ -227,6 +232,16 @@ func addProfileMenu(p profile.Profile, chk *checker.Checker, trigger func(), sto
 					return
 				}
 				OpenEdit(pCopy.Name)
+			case _, ok := <-renameItem.ClickedCh:
+				if !ok {
+					return
+				}
+				OpenRename(pCopy.Name)
+			case _, ok := <-removeItem.ClickedCh:
+				if !ok {
+					return
+				}
+				OpenRemove(pCopy.Name)
 			case _, ok := <-disconnectCh:
 				if !ok {
 					return

@@ -119,6 +119,31 @@ func Add(p Profile) error {
 	return Save(profiles)
 }
 
+// Rename changes a profile's name from oldName to newName.
+func Rename(oldName, newName string) error {
+	profiles, err := Load()
+	if err != nil {
+		return err
+	}
+	for _, p := range profiles {
+		if p.Name == newName {
+			return fmt.Errorf("profile %q already exists", newName)
+		}
+	}
+	found := false
+	for i, p := range profiles {
+		if p.Name == oldName {
+			profiles[i].Name = newName
+			found = true
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("profile %q not found", oldName)
+	}
+	return Save(profiles)
+}
+
 // Remove deletes a profile by name.
 func Remove(name string) error {
 	profiles, err := Load()
