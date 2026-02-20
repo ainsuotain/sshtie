@@ -31,21 +31,21 @@ build:
 	@rm $(DIST)/$(BINARY)
 	@echo "✅  $(DIST)/$(BINARY)-linux-amd64.tar.gz"
 
-	@printf "  %-18s" "darwin/amd64"
+	@printf "  %-18s" "darwin/amd64 (Intel)"
 	@GOOS=darwin  GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
 	    -o $(DIST)/$(BINARY) .
-	@tar -czf $(DIST)/$(BINARY)-darwin-amd64.tar.gz \
+	@tar -czf $(DIST)/$(BINARY)-mac-intel.tar.gz \
 	    -C $(DIST) $(BINARY)
 	@rm $(DIST)/$(BINARY)
-	@echo "✅  $(DIST)/$(BINARY)-darwin-amd64.tar.gz"
+	@echo "✅  $(DIST)/$(BINARY)-mac-intel.tar.gz"
 
-	@printf "  %-18s" "darwin/arm64"
+	@printf "  %-18s" "darwin/arm64 (Apple Silicon)"
 	@GOOS=darwin  GOARCH=arm64 go build -ldflags "$(LDFLAGS)" \
 	    -o $(DIST)/$(BINARY) .
-	@tar -czf $(DIST)/$(BINARY)-darwin-arm64.tar.gz \
+	@tar -czf $(DIST)/$(BINARY)-mac-apple-silicon.tar.gz \
 	    -C $(DIST) $(BINARY)
 	@rm $(DIST)/$(BINARY)
-	@echo "✅  $(DIST)/$(BINARY)-darwin-arm64.tar.gz"
+	@echo "✅  $(DIST)/$(BINARY)-mac-apple-silicon.tar.gz"
 
 	@printf "  %-18s" "windows/amd64"
 	@GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
@@ -100,8 +100,8 @@ release: build
 	    --title "sshtie $(VERSION)" \
 	    --generate-notes \
 	    $(DIST)/$(BINARY)-linux-amd64.tar.gz \
-	    $(DIST)/$(BINARY)-darwin-amd64.tar.gz \
-	    $(DIST)/$(BINARY)-darwin-arm64.tar.gz \
+	    $(DIST)/$(BINARY)-mac-intel.tar.gz \
+	    $(DIST)/$(BINARY)-mac-apple-silicon.tar.gz \
 	    $(DIST)/$(BINARY)-windows-amd64.zip \
 	    $(DIST)/SHA256SUMS
 	@echo ""

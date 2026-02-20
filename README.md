@@ -329,13 +329,13 @@ sudo mv sshtie /usr/local/bin/
 
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
-curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-arm64.tar.gz | tar -xz
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-apple-silicon.tar.gz | tar -xz
 sudo mv sshtie /usr/local/bin/
 ```
 
 **macOS — Intel**
 ```bash
-curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-darwin-amd64.tar.gz | tar -xz
+curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-intel.tar.gz | tar -xz
 sudo mv sshtie /usr/local/bin/
 ```
 
