@@ -330,18 +330,16 @@ sudo mv sshtie /usr/local/bin/
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-apple-silicon.tar.gz | tar -xz
-xattr -c sshtie          # clear macOS quarantine flag
 sudo mv sshtie /usr/local/bin/
 ```
 
 **macOS — Intel**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-intel.tar.gz | tar -xz
-xattr -c sshtie          # clear macOS quarantine flag
 sudo mv sshtie /usr/local/bin/
 ```
 
-> **macOS security note:** If you see *"cannot be opened because the developer cannot be verified"*, run `xattr -c sshtie` in the same directory before moving it to `/usr/local/bin/`. This clears the quarantine flag that macOS attaches to downloaded files. Homebrew install (`brew install sshtie`) handles this automatically.
+> **macOS security note:** Binaries are ad-hoc code-signed. If macOS blocks the first run, go to **System Settings → Privacy & Security → Allow Anyway**, or run `xattr -c sshtie` once before moving to `/usr/local/bin/`. Homebrew install handles this automatically.
 
 **Windows**
 Download `sshtie-windows-amd64.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases) and add to PATH.
@@ -351,12 +349,9 @@ For mosh support, also install the `linux-amd64` binary inside WSL.
 Download `sshtie-tray-windows-amd64.zip`, extract both files to the same folder, run `sshtie-tray.exe`.
 
 **macOS Menu-bar App**
-Download `sshtie-menubar-darwin-universal.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases), unzip, then:
-```bash
-xattr -cr sshtie-menubar.app   # clear macOS quarantine (required for downloaded apps)
-open sshtie-menubar.app
-```
+Download `sshtie-menubar-darwin-universal.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases), unzip, then **right-click → Open** (one-time Gatekeeper bypass for downloaded apps).
 > To open at login: click the menu-bar icon → **Open at Login**.
+> If right-click → Open doesn't work, run `xattr -cr sshtie-menubar.app` once first.
 
 ### macOS *(Homebrew)*
 ```bash
@@ -476,7 +471,13 @@ sshtie/
 - [x] Dark mode icon — correct color on macOS and Windows
 - [x] TUI profile list: shows `user@host:port [network]` (no duplicate host)
 
-### v0.7 — Next
+### v0.7 — Windows UX + macOS signing ✅
+- [x] **Windows CMD window hide** — clicking X keeps SSH alive in background; [connected] persists
+- [x] **Blank window flash fixed** — tray now spawns sshtie.exe directly (no CMD wrapper)
+- [x] **macOS ad-hoc codesigning** — CLI + menubar app signed at build time; right-click → Open to bypass Gatekeeper
+- [x] `sshtie copy` + main TUI `e` key (shipped with v0.6)
+
+### v0.8 — Next
 - [ ] `sshtie jump` — SSH jump host / bastion support
 - [ ] Main TUI `a` key — open add wizard directly from profile list
 

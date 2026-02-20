@@ -34,6 +34,7 @@ build:
 	@printf "  %-18s" "darwin/amd64 (Intel)"
 	@GOOS=darwin  GOARCH=amd64 go build -ldflags "$(LDFLAGS)" \
 	    -o $(DIST)/$(BINARY) .
+	@codesign --sign - --force $(DIST)/$(BINARY) 2>/dev/null || true
 	@tar -czf $(DIST)/$(BINARY)-mac-intel.tar.gz \
 	    -C $(DIST) $(BINARY)
 	@rm $(DIST)/$(BINARY)
@@ -42,6 +43,7 @@ build:
 	@printf "  %-18s" "darwin/arm64 (Apple Silicon)"
 	@GOOS=darwin  GOARCH=arm64 go build -ldflags "$(LDFLAGS)" \
 	    -o $(DIST)/$(BINARY) .
+	@codesign --sign - --force $(DIST)/$(BINARY) 2>/dev/null || true
 	@tar -czf $(DIST)/$(BINARY)-mac-apple-silicon.tar.gz \
 	    -C $(DIST) $(BINARY)
 	@rm $(DIST)/$(BINARY)

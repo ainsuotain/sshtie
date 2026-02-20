@@ -328,18 +328,16 @@ sudo mv sshtie /usr/local/bin/
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-apple-silicon.tar.gz | tar -xz
-xattr -c sshtie          # macOS 격리 플래그 해제
 sudo mv sshtie /usr/local/bin/
 ```
 
 **macOS — Intel**
 ```bash
 curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-mac-intel.tar.gz | tar -xz
-xattr -c sshtie          # macOS 격리 플래그 해제
 sudo mv sshtie /usr/local/bin/
 ```
 
-> **macOS 보안 경고가 뜨는 경우:** *"개발자를 확인할 수 없어 열 수 없습니다"* 라는 메시지가 뜨면, 같은 폴더에서 `xattr -c sshtie`를 실행한 뒤 이동하세요. Homebrew로 설치하면 이 과정이 자동으로 처리됩니다.
+> **macOS 보안 경고가 뜨는 경우:** 바이너리는 ad-hoc 코드사인이 적용되어 있습니다. macOS가 차단하면 **시스템 설정 → 개인 정보 보호 및 보안 → 허용**을 클릭하거나, `/usr/local/bin/`으로 이동하기 전에 `xattr -c sshtie`를 한 번 실행하세요. Homebrew 설치는 자동으로 처리됩니다.
 
 **Windows**
 [Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-windows-amd64.zip` 다운로드 후 PATH에 추가.
@@ -349,12 +347,9 @@ mosh 지원을 원하면 WSL 안에 `linux-amd64` 바이너리도 설치하세�
 `sshtie-tray-windows-amd64.zip`을 다운로드하고, 두 파일을 같은 폴더에 압축 해제한 뒤 `sshtie-tray.exe`를 실행하세요.
 
 **macOS 메뉴바 앱**
-[Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-menubar-darwin-universal.zip`을 다운로드하고 압축 해제한 뒤:
-```bash
-xattr -cr sshtie-menubar.app   # 다운로드 앱의 macOS 격리 플래그 해제 (필수)
-open sshtie-menubar.app
-```
+[Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-menubar-darwin-universal.zip`을 다운로드하고 압축 해제한 뒤, **우클릭 → 열기**로 Gatekeeper를 한 번만 허용하세요.
 > 로그인 시 자동 실행: 메뉴바 아이콘 클릭 → **Open at Login**.
+> 우클릭 → 열기가 안 되면 `xattr -cr sshtie-menubar.app`을 먼저 실행하세요.
 
 > **프로파일 데이터는 `~/.sshtie/profiles.yaml`에 저장됩니다.** 바이너리를 업데이트하거나 재설치해도 기존 서버 정보는 그대로 유지됩니다.
 
@@ -478,7 +473,12 @@ sshtie/
 - [x] 다크모드 아이콘 — macOS/Windows 다크모드에서 아이보리 색
 - [x] TUI 목록: `user@host:port [network]` 형식 (host 중복 제거)
 
-### v0.7 — 다음
+### v0.7 — Windows UX + macOS 서명 ✅
+- [x] **Windows CMD 창 숨기기** — X 클릭 시 SSH가 백그라운드에서 유지; [connected] 지속
+- [x] **빈 창 플래시 수정** — 트레이가 sshtie.exe 직접 실행 (CMD 래퍼 제거)
+- [x] **macOS ad-hoc 코드사이닝** — CLI + 메뉴바 앱 빌드 시 서명; 우클릭 → 열기로 Gatekeeper 우회
+
+### v0.8 — 다음
 - [ ] `sshtie jump` — SSH 점프 호스트 / 배스쳔 지원
 - [ ] 메인 TUI `a` 키 — 목록에서 바로 프로파일 추가
 
