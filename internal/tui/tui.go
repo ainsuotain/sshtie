@@ -17,6 +17,7 @@ const (
 	ActionNone    Action = iota
 	ActionConnect        // Enter
 	ActionDoctor         // d
+	ActionEdit           // e
 	ActionQuit           // q / ESC / ctrl+c
 )
 
@@ -71,6 +72,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chosen = m.profiles[m.cursor]
 				return m, tea.Quit
 			}
+		case "e":
+			if len(m.profiles) > 0 {
+				m.action = ActionEdit
+				m.chosen = m.profiles[m.cursor]
+				return m, tea.Quit
+			}
 		}
 	}
 	return m, nil
@@ -86,7 +93,16 @@ func (m model) View() string {
 		sb.WriteString(dimStyle.Render("  Run: sshtie add") + "\n")
 	} else {
 		for i, p := range m.profiles {
-			row := fmt.Sprintf("%-18s  %-22s  %s@%s:%d", p.Name, p.Host, p.User, p.Host, p.Port)
+			port := p.Port
+			if port == 0 {
+				port = 22
+			}
+			net := p.Network
+			if net == "" {
+				net = "auto"
+			}
+			addr := fmt.Sprintf("%s@%s:%d", p.User, p.Host, port)
+			row := fmt.Sprintf("%-18s  %-30s  [%s]", p.Name, addr, net)
 			if i == m.cursor {
 				sb.WriteString(selectedStyle.Render("▶ "+row) + "\n")
 			} else {
@@ -96,7 +112,7 @@ func (m model) View() string {
 	}
 
 	sb.WriteString("\n")
-	sb.WriteString(helpStyle.Render("  ↑/↓  k/j  navigate  •  enter  connect  •  d  doctor  •  q  quit"))
+	sb.WriteString(helpStyle.Render("  ↑/↓  k/j  navigate  •  enter  connect  •  d  doctor  •  e  edit  •  q  quit"))
 	sb.WriteString("\n")
 
 	return sb.String()

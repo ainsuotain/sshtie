@@ -41,6 +41,8 @@ connection strategy automatically.
 			case tui.ActionDoctor:
 				doctor.Run(result.Profile)
 				return nil
+			case tui.ActionEdit:
+				return runEdit(result.Profile.Name)
 			default:
 				// ActionQuit or ActionNone — nothing to do.
 				return nil
