@@ -23,7 +23,7 @@
 | Different settings per server | Unified YAML profiles |
 | No mosh/tmux on new server | Auto-detects and offers `sshtie install` |
 | On Tailscale network | Auto-detected and routed |
-| Want to monitor servers at a glance | Menu-bar app with 🟢/🔴 live status |
+| Want to monitor servers at a glance | Menu-bar app with 🟢/🔴 live status ( ● on WIN) |
 | Need to tune keepalive or agent forwarding | Per-profile SSH options with slider UI |
 | Want Cursor / VS Code to see my servers | Auto-syncs to `~/.ssh/config` on add/remove |
 | Close laptop lid → session drops | SSH+tmux sessions **auto-reconnect** when network returns |
