@@ -100,9 +100,11 @@ release: build
 	    --title "sshtie $(VERSION)" \
 	    --generate-notes \
 	    $(DIST)/$(BINARY)-linux-amd64.tar.gz \
-	    $(DIST)/$(BINARY)-mac-intel.tar.gz \
 	    $(DIST)/$(BINARY)-mac-apple-silicon.tar.gz \
+	    $(DIST)/$(BINARY)-mac-intel.tar.gz \
 	    $(DIST)/$(BINARY)-windows-amd64.zip \
+	    $(DIST)/$(BINARY)-menubar-darwin-universal.zip \
+	    $(DIST)/$(BINARY)-tray-windows-amd64.zip \
 	    $(DIST)/SHA256SUMS
 	@echo ""
 	@echo "✅  Release $(VERSION) published!"
