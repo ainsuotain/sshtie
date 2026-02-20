@@ -18,6 +18,9 @@ import (
 // intervalPresets cycles: 10s → 30s → 60s → 10s …
 var intervalPresets = []int{10, 30, 60}
 
+// stopMenuCh is closed to stop all goroutines from the previous buildMenu call.
+var stopMenuCh chan struct{}
+
 // Run starts the menu-bar / system-tray app. It blocks until Quit is clicked.
 func Run() {
 	systray.Run(onReady, nil)
@@ -69,6 +72,13 @@ func onReady() {
 // ── menu builder ───────────────────────────────────────────────────────────────
 
 func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func()) {
+	// Stop all goroutines from the previous buildMenu call.
+	if stopMenuCh != nil {
+		close(stopMenuCh)
+	}
+	stopMenuCh = make(chan struct{})
+	stop := stopMenuCh // captured by goroutines below
+
 	systray.ResetMenu()
 
 	// ── header ──
@@ -80,13 +90,21 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 	if len(profiles) == 0 {
 		empty := systray.AddMenuItem("No profiles yet — Add Server…", "")
 		go func() {
-			for range empty.ClickedCh {
-				OpenAdd()
+			for {
+				select {
+				case <-stop:
+					return
+				case _, ok := <-empty.ClickedCh:
+					if !ok {
+						return
+					}
+					OpenAdd()
+				}
 			}
 		}()
 	} else {
 		for _, p := range profiles {
-			addProfileMenu(p, chk, trigger)
+			addProfileMenu(p, chk, trigger, stop)
 		}
 	}
 
@@ -110,13 +128,24 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 	go func() {
 		for {
 			select {
-			case <-addItem.ClickedCh:
+			case <-stop:
+				return
+			case _, ok := <-addItem.ClickedCh:
+				if !ok {
+					return
+				}
 				OpenAdd()
-			case <-refreshItem.ClickedCh:
+			case _, ok := <-refreshItem.ClickedCh:
+				if !ok {
+					return
+				}
 				ps, _ := profile.Load()
 				go chk.CheckAll(ps, trigger)
 				go chk.RefreshSessions(trigger)
-			case <-loginItem.ClickedCh:
+			case _, ok := <-loginItem.ClickedCh:
+				if !ok {
+					return
+				}
 				if IsAutoStartEnabled() {
 					_ = DisableAutoStart()
 					loginItem.SetTitle("  Open at Login")
@@ -124,7 +153,10 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 					_ = EnableAutoStart()
 					loginItem.SetTitle("✓ Open at Login")
 				}
-			case <-quitItem.ClickedCh:
+			case _, ok := <-quitItem.ClickedCh:
+				if !ok {
+					return
+				}
 				systray.Quit()
 			}
 		}
@@ -132,8 +164,8 @@ func buildMenu(profiles []profile.Profile, chk *checker.Checker, trigger func())
 }
 
 // addProfileMenu creates one top-level profile item with its sub-menu.
-func addProfileMenu(p profile.Profile, chk *checker.Checker, trigger func()) {
-	reachable, known := chk.Get(p.Name)
+func addProfileMenu(p profile.Profile, chk *checker.Checker, trigger func(), stop chan struct{}) {
+	reachable, known    := chk.Get(p.Name)
 	activeSess, isActive := chk.ActiveSession(p.Name)
 
 	label   := menuLabel(p.Name, reachable, known, isActive)
@@ -144,56 +176,62 @@ func addProfileMenu(p profile.Profile, chk *checker.Checker, trigger func()) {
 
 	item := systray.AddMenuItem(label, tooltip)
 
-	// ── Connect ──
-	connectItem := item.AddSubMenuItem("Connect", "Open a terminal and connect")
-
-	// ── separator (disabled dash item) ──
-	sep1 := item.AddSubMenuItem("──────────", "")
+	// ── sub-items ──
+	connectItem  := item.AddSubMenuItem("Connect", "Open a terminal and connect")
+	sep1         := item.AddSubMenuItem("──────────", "")
 	sep1.Disable()
-
-	// ── Quick SSH options ──
 	intervalItem := item.AddSubMenuItem(intervalLabel(p), "Cycle: 10s → 30s → 60s")
 	faItem        := item.AddSubMenuItem(faLabel(p), "Toggle SSH agent forwarding")
 	editItem      := item.AddSubMenuItem("Edit SSH Options…", "Open slider UI to adjust all options")
 
-	// ── Disconnect (only when active) ──
-	var disconnectItem *systray.MenuItem
+	var disconnectCh <-chan struct{}
 	if isActive {
 		sep2 := item.AddSubMenuItem("──────────", "")
 		sep2.Disable()
-		disconnectItem = item.AddSubMenuItem("Disconnect", "Terminate this connection")
+		disconnectCh = item.AddSubMenuItem("Disconnect", "Terminate this connection").ClickedCh
+	} else {
+		disconnectCh = make(chan struct{}) // never fires
 	}
 
-	pCopy := p
+	pCopy      := p
+	activeCopy := activeSess
 
 	go func() {
 		for {
 			select {
-			case <-connectItem.ClickedCh:
+			case <-stop:
+				return
+			case _, ok := <-connectItem.ClickedCh:
+				if !ok {
+					return
+				}
 				OpenConnect(pCopy.Name)
-
-			case <-intervalItem.ClickedCh:
+			case _, ok := <-intervalItem.ClickedCh:
+				if !ok {
+					return
+				}
 				updateProfile(pCopy.Name, func(pr *profile.Profile) {
 					pr.ServerAliveInterval = nextInterval(pr.ServerAliveInterval)
 				})
 				trigger()
-
-			case <-faItem.ClickedCh:
+			case _, ok := <-faItem.ClickedCh:
+				if !ok {
+					return
+				}
 				updateProfile(pCopy.Name, func(pr *profile.Profile) {
 					pr.ForwardAgent = !pr.ForwardAgent
 				})
 				trigger()
-
-			case <-editItem.ClickedCh:
-				OpenEdit(pCopy.Name)
-
-			case <-func() chan struct{} {
-				if disconnectItem != nil {
-					return disconnectItem.ClickedCh
+			case _, ok := <-editItem.ClickedCh:
+				if !ok {
+					return
 				}
-				return make(chan struct{}) // never fires
-			}():
-				killSession(activeSess)
+				OpenEdit(pCopy.Name)
+			case _, ok := <-disconnectCh:
+				if !ok {
+					return
+				}
+				killSession(activeCopy)
 				trigger()
 			}
 		}
@@ -218,8 +256,7 @@ func faLabel(p profile.Profile) string {
 }
 
 // nextInterval returns the smallest preset strictly greater than current.
-// Wraps back to the first preset when current is already at (or beyond) the max.
-// Examples: 0→10, 10→30, 15→30, 30→60, 60→10, 99→10
+// Wraps back to the first preset when current is at or beyond the max.
 func nextInterval(current int) int {
 	for _, v := range intervalPresets {
 		if v > current {
