@@ -10,45 +10,85 @@ import (
 )
 
 // OpenConnect opens a terminal and runs "sshtie connect <name>".
+// Prefers WSL (gets mosh support) over native Windows terminal.
 func OpenConnect(profileName string) {
-	_ = openTerminal(fmt.Sprintf("%s connect %s", resolveBin(), profileName))
+	if openWSL("connect " + profileName) {
+		return
+	}
+	_ = openWindowsTerminal(fmt.Sprintf("%s connect %s", resolveBin(), profileName))
 }
 
 // OpenAdd opens a terminal and runs "sshtie add".
 func OpenAdd() {
-	_ = openTerminal(fmt.Sprintf("%s add", resolveBin()))
+	if openWSL("add") {
+		return
+	}
+	_ = openWindowsTerminal(fmt.Sprintf("%s add", resolveBin()))
 }
 
 // OpenEdit opens a terminal and runs "sshtie edit <name>".
 func OpenEdit(profileName string) {
-	_ = openTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
+	if openWSL("edit " + profileName) {
+		return
+	}
+	_ = openWindowsTerminal(fmt.Sprintf("%s edit %s", resolveBin(), profileName))
 }
 
-// openTerminal opens a new terminal window running the given command.
+// ── WSL support ───────────────────────────────────────────────────────────────
+
+// openWSL tries to open a WSL terminal running "sshtie <args>".
+// Returns true (and starts the terminal) if WSL + sshtie-in-WSL are available.
+// WSL gives full mosh support, unlike native Windows terminals.
+func openWSL(sshtieArgs string) bool {
+	if _, err := exec.LookPath("wsl.exe"); err != nil {
+		return false // WSL not installed
+	}
+	// Check that sshtie is available inside WSL.
+	if err := exec.Command("wsl.exe", "which", "sshtie").Run(); err != nil {
+		return false // sshtie not found in WSL PATH
+	}
+
+	// Wrap with a "session ended" prompt so the window stays open.
+	bashCmd := fmt.Sprintf(
+		`sshtie %s; echo ""; echo "  Session ended. Press Enter to close."; read`,
+		sshtieArgs,
+	)
+
+	// Prefer Windows Terminal for best ANSI support.
+	if wt, err := exec.LookPath("wt.exe"); err == nil {
+		_ = exec.Command(wt, "new-tab", "--", "wsl.exe", "bash", "-c", bashCmd).Start()
+		return true
+	}
+	// Fall back to launching WSL directly (opens in a new console window).
+	_ = exec.Command("wsl.exe", "bash", "-c", bashCmd).Start()
+	return true
+}
+
+// ── Native Windows terminal ───────────────────────────────────────────────────
+
+// openWindowsTerminal opens a native Windows terminal (no mosh).
 // Priority: Windows Terminal → PowerShell → cmd.exe
-func openTerminal(shellCmd string) error {
-	// Wrap command with a banner so users see immediate feedback.
+func openWindowsTerminal(shellCmd string) error {
 	wrapped := fmt.Sprintf(
 		`echo. & echo  sshtie - connecting... & echo. & %s & echo. & echo  Session ended. Press any key to close. & pause >nul`,
 		shellCmd,
 	)
 
-	// Windows Terminal (wt.exe) — best ANSI support, Windows 10 1903+
 	if wt, err := exec.LookPath("wt.exe"); err == nil {
 		return exec.Command(wt, "new-tab", "--", "cmd.exe", "/K", wrapped).Start()
 	}
-	// PowerShell (pwsh or legacy powershell)
 	for _, ps := range []string{"pwsh.exe", "powershell.exe"} {
 		if _, err := exec.LookPath(ps); err == nil {
 			psCmd := fmt.Sprintf(`Write-Host ""; Write-Host "  sshtie - connecting..." -ForegroundColor Cyan; Write-Host ""; & %s`, shellCmd)
 			return exec.Command(ps, "-NoExit", "-Command", psCmd).Start()
 		}
 	}
-	// cmd.exe fallback
 	return exec.Command("cmd.exe", "/C", "start", "cmd.exe", "/K", wrapped).Start()
 }
 
-// resolveBin returns the absolute path of the sshtie CLI binary.
+// ── Binary resolution ─────────────────────────────────────────────────────────
+
+// resolveBin returns the absolute path of the native Windows sshtie binary.
 // Priority: next to this executable → Scoop → PATH.
 func resolveBin() string {
 	if exe, err := os.Executable(); err == nil {
@@ -57,7 +97,6 @@ func resolveBin() string {
 			return candidate
 		}
 	}
-	// Scoop package manager
 	if home, err := os.UserHomeDir(); err == nil {
 		p := filepath.Join(home, "scoop", "shims", "sshtie.exe")
 		if _, err := os.Stat(p); err == nil {
