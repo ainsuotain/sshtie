@@ -71,8 +71,10 @@ sed "s/VERSION_PLACEHOLDER/$VERSION/g" build/darwin/Info.plist \
 echo "✅"
 
 # ── 4. Ad-hoc code sign (removes Gatekeeper "damaged app" warning) ───────────
+# Remove macOS resource-fork metadata files (._*) that codesign cannot handle.
+find "$APP" -name "._*" -delete 2>/dev/null || true
 printf "  %-24s" "codesign (ad-hoc)"
-codesign --deep --force --sign - "$APP" 2>/dev/null && echo "✅" || echo "⚠  skipped"
+codesign --deep --force --sign - "$APP" 2>/dev/null && echo "✅" || echo "⚠  skipped (needs Xcode)"
 
 # ── 5. Zip for distribution ───────────────────────────────────────────────────
 printf "  %-24s" "zipping"
