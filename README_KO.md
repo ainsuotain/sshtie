@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](#)
 [![Release](https://img.shields.io/github/v/release/ainsuotain/sshtie)](https://github.com/ainsuotain/sshtie/releases)
 
-> **한 번 접속하면 끊기지 않습니다. 자동 폴백, 자동 tmux, Tailscale 지원.**
+> **한 번 접속하면 끊기지 않습니다. 자동 재연결, 자동 tmux, Tailscale 지원.**
 
 English docs: [README.md](README.md)
 
@@ -25,6 +25,7 @@ English docs: [README.md](README.md)
 | 서버 상태를 한눈에 보고 싶다 | 메뉴바 앱으로 🟢/🔴 실시간 확인 |
 | keepalive나 에이전트 포워딩 조정 | 슬라이더 UI로 프로파일별 설정 |
 | Cursor / VS Code에서 서버를 보고 싶다 | add/remove 시 `~/.ssh/config` 자동 동기화 |
+| 노트북 덮었다 열면 세션이 끊김 | ssh+tmux 세션 **자동 재연결** (네트워크 복구 시) |
 
 ---
 
@@ -65,30 +66,25 @@ English docs: [README.md](README.md)
 
 ### 1단계 — 서버 등록
 
-`sshtie add`는 TUI 위자드를 실행합니다. Enter로 다음, ESC로 이전 단계.
+```bash
+sshtie add
+```
+
+TUI 위자드 실행 — 필수 항목은 **이름·호스트·유저** 3가지뿐. Enter로 다음, ESC로 이전.
 
 ```
-$ sshtie add
-
-  sshtie add  New Profile        Step 1 / 7
-
   ▶ Profile name    homeserver█
-    A nickname for this connection (e.g., macmini, work-server)
   · Host            (required)
   · User            (required)
-  · Port            22
+  · Port            22            ← 모르면 Enter
   · SSH Key         ~/.ssh/id_ed25519
   · tmux session    main
   · Network mode    auto
-
-  enter  next  •  esc  back  •  ctrl+c  cancel
 ```
-
-필수 항목은 **이름·호스트·유저** 3가지뿐. 나머지는 Enter로 기본값 사용.
 
 저장 후 `~/.ssh/config`가 **자동으로 업데이트**되어 Cursor와 VS Code에서 즉시 서버를 확인할 수 있습니다.
 
-**고급 SSH 옵션**은 생성 시 플래그로 설정 가능:
+**고급 SSH 옵션** (생성 시 플래그로 설정):
 
 ```bash
 sshtie add --forward-agent            # SSH 에이전트 포워딩 활성화
@@ -108,7 +104,7 @@ sshtie install homeserver --tailscale # Tailscale도 함께 설치
 
 지원 패키지 매니저: `apt` · `dnf` · `yum` · `brew` · `pacman`. 비밀번호 인증도 지원.
 
-> **Tip:** `sshtie connect`가 누락된 도구를 자동으로 감지하고 설치 여부를 물어봅니다.
+> `sshtie connect`가 누락된 도구를 자동으로 감지하고 설치 여부를 물어봅니다.
 
 ---
 
@@ -122,22 +118,29 @@ sshtie homeserver          # 단축 사용
 자동으로 최적 전략 선택:
 
 ```
-  sshtie connect homeserver
-          │
-          ▼
-  ┌──────────────────────┐
-  │  mosh 설치 확인      │
-  │  UDP 60001 열려 있나?│
-  └──────────┬───────────┘
-           Yes│                     No│
-              ▼                       ▼
-       mosh + tmux              ssh + tmux
-       attach/create            attach/create
-              │                       │
-          실패│                   실패│
-              ▼                       ▼
-       ssh + tmux               ssh only
+  mosh + tmux  →  ssh + tmux  →  ssh only
 ```
+
+---
+
+## 자동 재연결
+
+`ssh + tmux` 사용 시, 네트워크가 끊겼다가 복구되면 **자동으로 재접속**합니다 (노트북 덮기, WiFi 전환, VPN 변경 등):
+
+```
+→ Connecting to homeserver (alice@192.168.1.100)…
+[… 작업 중 …]
+[네트워크 끊김]
+
+⚠  Connection to 'homeserver' dropped.
+   Waiting for network to come back (Ctrl+C to cancel)......... ✓
+→ Reconnecting... (attempt 1/10)
+[tmux 세션이 끊기기 전 상태 그대로 재개]
+```
+
+- 3초마다 서버 TCP 연결 가능 여부 확인
+- 최대 **10회** 재시도 — 언제든 Ctrl+C로 취소 가능
+- **mosh** 사용 시: mosh 자체가 재연결 처리 (더 안정적)
 
 ---
 
@@ -150,11 +153,35 @@ sshtie homeserver          # 단축 사용
 | `sshtie connect <name>` | 접속 |
 | `sshtie <name>` | connect 단축키 |
 | `sshtie edit <name>` | 고급 SSH 옵션 슬라이더 UI |
+| `sshtie copy <src> <dst>` | 프로파일 복제 (새 이름으로) |
 | `sshtie list` | 프로파일 목록 |
 | `sshtie doctor <name>` | 연결 진단 (6가지 체크) |
 | `sshtie install <name>` | 원격 서버에 mosh + tmux 자동 설치 |
+| `sshtie rename <name>` | 프로파일 이름 변경 |
 | `sshtie remove <name>` | 프로파일 삭제 |
 | `sshtie ssh-config` | 전체 프로파일을 `~/.ssh/config`에 수동 동기화 |
+
+---
+
+## 인터랙티브 TUI
+
+인수 없이 `sshtie`를 실행하면 프로파일 선택 화면이 열립니다:
+
+```
+  sshtie  SSH + mosh + tmux, unified
+
+▶ homeserver          alice@192.168.1.100:22   [auto]
+  workserver          david@work.example.com:2222  [tailscale]
+
+  ↑/↓  k/j  navigate  •  enter  connect  •  d  doctor  •  e  edit  •  q  quit
+```
+
+| 키 | 동작 |
+|---|---|
+| `enter` | 선택한 프로파일에 접속 |
+| `e` | 선택한 프로파일 편집 화면 열기 |
+| `d` | 선택한 프로파일 doctor 실행 |
+| `q` / `Esc` | 종료 |
 
 ---
 
@@ -199,17 +226,32 @@ Host homeserver
 ```
 $ sshtie edit homeserver
 
-  sshtie edit  homeserver
-
-  ↑/↓ select  ·  ←/→ adjust  ·  shift+←/→ jump  ·  enter save  ·  esc cancel
-
   ▶ Connection attempts   [━━━━░░░░░░░░░░░░░░░░]    3  (1–10)
     Alive interval        [━━━━━━━━░░░░░░░░░░░░]   10s (10–60s)
     Alive count max       [━━━━━━━━━━━━━━░░░░░░]   60  (6–120)
     Forward agent         ○ on  ● off
 
   Effective max silence: 600s (10m 00s)
+
+  ─── Profile ──────────────────────────────────────────────
+    Rename                homeserver
+    Delete profile
 ```
+
+조작: `↑/↓` 선택 · `←/→` 조정 · `shift+←/→` 점프 · `enter` 저장 · `esc` 취소
+
+---
+
+## sshtie copy
+
+프로파일을 새 이름으로 복제:
+
+```bash
+sshtie copy homeserver homeserver-backup
+sshtie cp   workserver workserver-dev
+```
+
+모든 설정(host, user, port, SSH 옵션 등)이 그대로 복제됩니다. 이후 `sshtie edit <name>`으로 수정하면 됩니다.
 
 ---
 
@@ -227,6 +269,9 @@ $ sshtie edit homeserver
     Forward agent: off  ← 클릭 시 on/off 토글 (즉시 저장)
     Edit SSH Options…   ← 터미널 열고 슬라이더 TUI 실행
     ──────────
+    Rename…
+    Remove Profile
+    ──────────
     Disconnect          ← 연결 중일 때만 표시
 ```
 
@@ -237,24 +282,15 @@ $ sshtie edit homeserver
 **주요 기능:**
 - TCP 상태 60초마다 자동 갱신, 세션 상태 5초마다 갱신
 - **Open at Login** 토글 (macOS: LaunchAgent, Windows: 레지스트리)
-- Disconnect 클릭 시 프로세스 종료 + 세션 파일 자동 정리
-
-**Windows 트레이 — WSL 자동 감지:**
-"Connect" 클릭 시 WSL + sshtie-in-WSL 자동 확인:
-1. WSL 있고 + WSL 안에 sshtie 있으면 → WSL 터미널 오픈 (mosh 지원 ✅)
-2. 없으면 → 네이티브 Windows 터미널 (SSH only)
+- **다크모드 대응** — macOS/Windows 모두 다크모드에서 아이보리 색 아이콘 자동 적용
+- **Windows WSL 자동 감지** — mosh 지원 WSL 터미널로 자동 연결
 
 ### 트레이 앱 빌드
 
 ```bash
-# macOS .app 번들
-make menubar
-
-# 바로 실행
-make menubar-run
-
-# Windows 트레이 (Mac에서 크로스 컴파일)
-make tray-windows   # → dist/sshtie-tray-windows-amd64.zip
+make menubar          # macOS .app 번들 → dist/sshtie-menubar.app
+make menubar-run      # 빌드 후 바로 실행
+make tray-windows     # Windows 트레이 → dist/sshtie-tray-windows-amd64.zip
 ```
 
 ---
@@ -265,14 +301,13 @@ make tray-windows   # → dist/sshtie-tray-windows-amd64.zip
 $ sshtie doctor homeserver
 
   SSH connection       ✅ OK
-  mosh-server          ✅ Found (/opt/homebrew/bin/mosh-server)
+  mosh-server          ✅ Found
   UDP port 60001       ✅ Open
   tmux                 ✅ tmux 3.3a installed
   Tailscale (client)   ✅ Running
   Tailscale (server)   ✅ Found in Tailscale network
 
 → Recommended strategy: mosh + tmux
-→ Ready to connect!
 ```
 
 ---
@@ -288,7 +323,7 @@ curl -L https://github.com/ainsuotain/sshtie/releases/latest/download/sshtie-lin
 sudo mv sshtie /usr/local/bin/
 ```
 
-> **WSL 팁:** WSL은 보통 `/mnt/c/Users/<이름>` (Windows 경로)에서 시작합니다. `cd ~`로 Linux 홈(`/home/<이름>`)으로 이동 후 실행하세요.
+> **WSL 팁:** `cd ~`로 Linux 홈(`/home/<이름>`)으로 이동 후 실행하세요.
 
 **macOS — Apple Silicon (M1/M2/M3/M4)**
 ```bash
@@ -308,6 +343,8 @@ mosh 지원을 원하면 WSL 안에 `linux-amd64` 바이너리도 설치하세�
 
 **Windows 트레이 앱**
 `sshtie-tray-windows-amd64.zip`을 다운로드하고, 두 파일을 같은 폴더에 압축 해제한 뒤 `sshtie-tray.exe`를 실행하세요.
+
+> **프로파일 데이터는 `~/.sshtie/profiles.yaml`에 저장됩니다.** 바이너리를 업데이트하거나 재설치해도 기존 서버 정보는 그대로 유지됩니다.
 
 ### macOS *(Homebrew)*
 ```bash
@@ -344,9 +381,25 @@ profiles:
     # 고급 SSH 옵션 (생략 시 기본값 사용)
     forward_agent: true          # SSH 에이전트 포워딩 (기본: false)
     server_alive_interval: 10    # keepalive 간격 초 (기본: 10)
-    server_alive_count_max: 60   # 무응답 허용 횟수 (기본: 60, 10분)
+    server_alive_count_max: 60   # 무응답 허용 횟수 (기본: 60)
     connection_attempts: 3       # 연결 재시도 횟수 (기본: 3)
 ```
+
+---
+
+## 서버 사전 조건
+
+**macOS 서버**
+- 시스템 설정 → 일반 → 공유 → **원격 로그인: ON**
+- `brew install mosh tmux` *(또는 `sshtie install` 사용)*
+
+**Linux 서버**
+- `sshd` 실행 중이어야 함
+- `sudo apt install mosh tmux` *(또는 `sshtie install` 사용)*
+
+**Windows 서버**
+- 설정 → 앱 → 선택적 기능 → **OpenSSH 서버**
+- ⚠ Windows 서버에서는 mosh, tmux 미지원
 
 ---
 
@@ -358,20 +411,22 @@ sshtie/
 ├── menubar/main.go           # 트레이 앱 진입점 (darwin/windows)
 ├── cmd/
 │   ├── add.go                # TUI 위자드 + SSH 옵션 플래그
-│   ├── connect.go            # 연결 진입점
+│   ├── connect.go
+│   ├── copy.go               # 프로파일 복제
 │   ├── edit.go               # 슬라이더 TUI
+│   ├── rename.go
 │   ├── ssh_config.go         # ~/.ssh/config 동기화
-│   ├── doctor.go             # 진단
-│   ├── install.go            # 원격 의존성 설치
+│   ├── doctor.go
+│   ├── install.go
 │   ├── list.go
 │   └── remove.go
 └── internal/
     ├── profile/              # YAML 프로파일 (~/.sshtie/profiles.yaml)
-    ├── connector/            # mosh/ssh/tmux 전략 + 세션 기록
+    ├── connector/            # mosh/ssh/tmux 전략 + 자동 재연결
     ├── session/              # PID 락 파일 (~/.sshtie/sessions/*.json)
     ├── checker/              # 백그라운드 TCP + 세션 폴링
-    ├── menubar/              # systray 앱 (darwin/windows)
-    ├── tui/                  # Bubble Tea UI (connect, doctor, edit)
+    ├── menubar/              # systray 앱 + 다크모드 아이콘
+    ├── tui/                  # Bubble Tea UI (connect, doctor, edit, list)
     ├── doctor/               # 진단 로직
     └── tailscale/            # Tailscale 감지
 ```
@@ -393,7 +448,6 @@ sshtie/
 ### v0.4 — 메뉴바 앱 ✅
 - [x] macOS 메뉴바 + Windows 시스템 트레이
 - [x] 실시간 🟢/🔴 서버 상태
-- [x] 클릭으로 터미널 연결
 - [x] Open at Login (LaunchAgent / 레지스트리)
 
 ### v0.5 — 연결 관리 + SSH 옵션 ✅
@@ -403,11 +457,18 @@ sshtie/
 - [x] 트레이에서 Interval / ForwardAgent 빠른 조정
 - [x] WSL 자동 감지 (트레이 → WSL 터미널 → mosh 지원)
 - [x] `~/.ssh/config` 자동 동기화 (Cursor/VS Code 통합)
-- [x] 단위 테스트 (session, profile, menubar)
+- [x] 단위 테스트
 
-### v0.6 — 다음
+### v0.6 — 안정성 + 워크플로우 ✅
+- [x] **자동 재연결** — ssh+tmux 세션이 네트워크 복구 시 자동 재접속
+- [x] `sshtie copy` — 프로파일 복제
+- [x] 메인 TUI `e` 키 — 선택한 프로파일 바로 편집
+- [x] 다크모드 아이콘 — macOS/Windows 다크모드에서 아이보리 색
+- [x] TUI 목록: `user@host:port [network]` 형식 (host 중복 제거)
+
+### v0.7 — 다음
 - [ ] `sshtie jump` — SSH 점프 호스트 / 배스쳔 지원
-- [ ] 끊긴 세션 자동 재연결
+- [ ] 메인 TUI `a` 키 — 목록에서 바로 프로파일 추가
 
 ---
 
