@@ -74,4 +74,5 @@ func init() {
 	rootCmd.AddCommand(doctorCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(installCmd)
+	rootCmd.AddCommand(sshConfigCmd)
 }
