@@ -348,6 +348,14 @@ mosh 지원을 원하면 WSL 안에 `linux-amd64` 바이너리도 설치하세�
 **Windows 트레이 앱**
 `sshtie-tray-windows-amd64.zip`을 다운로드하고, 두 파일을 같은 폴더에 압축 해제한 뒤 `sshtie-tray.exe`를 실행하세요.
 
+**macOS 메뉴바 앱**
+[Releases](https://github.com/ainsuotain/sshtie/releases)에서 `sshtie-menubar-darwin-universal.zip`을 다운로드하고 압축 해제한 뒤:
+```bash
+xattr -cr sshtie-menubar.app   # 다운로드 앱의 macOS 격리 플래그 해제 (필수)
+open sshtie-menubar.app
+```
+> 로그인 시 자동 실행: 메뉴바 아이콘 클릭 → **Open at Login**.
+
 > **프로파일 데이터는 `~/.sshtie/profiles.yaml`에 저장됩니다.** 바이너리를 업데이트하거나 재설치해도 기존 서버 정보는 그대로 유지됩니다.
 
 ### macOS *(Homebrew)*

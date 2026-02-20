@@ -350,6 +350,14 @@ For mosh support, also install the `linux-amd64` binary inside WSL.
 **Windows Tray App**
 Download `sshtie-tray-windows-amd64.zip`, extract both files to the same folder, run `sshtie-tray.exe`.
 
+**macOS Menu-bar App**
+Download `sshtie-menubar-darwin-universal.zip` from [Releases](https://github.com/ainsuotain/sshtie/releases), unzip, then:
+```bash
+xattr -cr sshtie-menubar.app   # clear macOS quarantine (required for downloaded apps)
+open sshtie-menubar.app
+```
+> To open at login: click the menu-bar icon → **Open at Login**.
+
 ### macOS *(Homebrew)*
 ```bash
 brew tap ainsuotain/sshtie
