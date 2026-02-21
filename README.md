@@ -74,15 +74,7 @@ sshtie add
 Interactive TUI wizard — only **name**, **host**, and **user** are required.
 Port defaults to 22. Press Enter to skip optional fields.
 
-```
-  ▶ Profile name    homeserver█
-  · Host            (required)
-  · User            (required)
-  · Port            22            ← press Enter if unsure
-  · SSH Key         ~/.ssh/id_ed25519
-  · tmux session    main
-  · Network mode    auto
-```
+![sshtie add TUI](README/tui_sshtie_add.png)
 
 After saving, `~/.ssh/config` is **automatically updated** — Cursor and VS Code will see the new server immediately.
 
