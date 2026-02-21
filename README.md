@@ -7,6 +7,8 @@
 
 > **Connect once. Stay connected. Auto-reconnect, auto-tmux, Tailscale-aware.**
 
+![sshtie demo](README/sshtie-mac.gif)
+
 한국어 문서: [README_KO.md](README_KO.md)
 
 ---
